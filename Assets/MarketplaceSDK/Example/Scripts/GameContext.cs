@@ -2,10 +2,10 @@ using MarketplaceSDK.Example.Game.Creator;
 using MarketplaceSDK.Example.Game.Input;
 using MarketplaceSDK.Example.Game.Models;
 using MarketplaceSDK.Example.Game.Particle.Provider;
-using MarketplaceSDK.Example.Game.Player.Detect;
 using MarketplaceSDK.Example.Game.Player.Movement;
 using MarketplaceSDK.Example.Game.Provider;
 using MarketplaceSDK.Example.Interfaces;
+using MarketplaceSDK.Models;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -49,14 +49,15 @@ namespace MarketplaceSDK.Example.Game
 
         private void isGame(bool isGame) { _isGame = isGame; }
 
-
-        private void Awake()
+        private async void Awake()
         {
+            Root root = await MarketplaceSDK.OnSearchListing();
+            Debug.Log(root.Results[0].Nft.Description);
             OnInitializeCell();
             _actionGame += isGame;
             //waiting for transactions
             Vector3 scaleTest = new Vector3(1f, 1f, 1f);
-            float speedTest = 10f;
+            float speedTest = 2f;
 
             _gridModel = new GridModel(scaleTest.y);
 
