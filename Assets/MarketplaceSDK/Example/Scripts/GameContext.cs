@@ -1,4 +1,5 @@
 using MarketplaceSDK.Example.Game.Creator;
+using MarketplaceSDK.Example.Game.Enum;
 using MarketplaceSDK.Example.Game.Input;
 using MarketplaceSDK.Example.Game.Models;
 using MarketplaceSDK.Example.Game.Particle.Provider;
@@ -16,15 +17,16 @@ namespace MarketplaceSDK.Example.Game
 {
     public class GameContext : MonoBehaviour
     {
-        private Action<bool> _actionGame;
-
         private IPersonCreator _personCreator = new PersonCreator();
+
+        private Action<bool> _actionGame;
 
         [SerializeField] private GameObject _prefabPlayer;
         [SerializeField] private GameObject _prefabCritter;
         [SerializeField] private PlayerInput _playerInput;
         [SerializeField] private GameObject _particleSplash;
         [SerializeField] private Transform _cameraTransform;
+        [SerializeField] private GameObject _mainMenu;
         [SerializeField] private Text _scoreText;
         [SerializeField] private Text _timerText;
 
@@ -42,6 +44,7 @@ namespace MarketplaceSDK.Example.Game
         private int _score = 0;
         private float _timer = 1f;
         private float _mainTimer = 60f;
+        private float _multiplyRotateCamera = 10f;
         private bool _isGame = false;
 
         private const string CUBIX_NAME = "Cubix";
@@ -52,19 +55,31 @@ namespace MarketplaceSDK.Example.Game
         private async void Awake()
         {
             Root root = await MarketplaceSDK.OnSearchListing();
-            Debug.Log(root.Results[0].Nft.Description);
+            Result result = root.Results[0];
+
+            _mainMenu.SetActive(true);
             OnInitializeCell();
             _actionGame += isGame;
-            //waiting for transactions
-            Vector3 scaleTest = new Vector3(1f, 1f, 1f);
-            float speedTest = 2f;
 
-            _gridModel = new GridModel(scaleTest.y);
+            InitGame(result);
+        }
 
-            _currentPlayer = _personCreator.CreatePerson(_prefabPlayer, new Vector3(-4.5f, 0f, -4.5f), CUBIX_NAME, 3);
+        private void InitGame(Result result)
+        {
+            Vector3 scale = new Vector3(result.Nft.Fields.Size, result.Nft.Fields.Size, result.Nft.Fields.Size);
+            float speed = result.Nft.Fields.Speed;
+
+            int sideColor = (int)ColorType.Parse(typeof(ColorType), result.Nft.Fields.SideColor);
+            int edgeColor = (int)ColorType.Parse(typeof(ColorType), result.Nft.Fields.EdgeColor);
+
+            _gridModel = new GridModel(scale.y);
+
+            _currentPlayer = _personCreator.CreatePerson(_prefabPlayer, new Vector3(_gridModel.cellPositions[0, 0].x, 0f, _gridModel.cellPositions[0, 0].z),
+                CUBIX_NAME, sideColor, edgeColor);
+
             if (_currentPlayer.TryGetComponent(out PlayerMovement movement))
             {
-                movement.OnSetupPlayer(speedTest, scaleTest);
+                movement.OnSetupPlayer(speed, scale);
                 movement.OnSetupGrid(_gridModel);
 
                 _playerInput.onFire += movement.OnTouch;
@@ -76,6 +91,26 @@ namespace MarketplaceSDK.Example.Game
                 provider.playerDetect.action += TouchTheCritter;
             }
             _playerInput.onHold += RotateCamera;
+        }
+
+        private void OnApplicationQuit()
+        {
+            UnsubscribeActions();
+        }
+
+        private void UnsubscribeActions()
+        {
+            if (_currentPlayer.TryGetComponent(out PlayerMovement movement))
+            {
+                _playerInput.onFire -= movement.OnTouch;
+                _actionGame -= movement.OnSetupGame;
+            }
+
+            if (_currentPlayer.TryGetComponent(out PlayerComponentProvider provider))
+            {
+                provider.playerDetect.action -= TouchTheCritter;
+            }
+            _playerInput.onHold -= RotateCamera;
         }
 
         private void Update()
@@ -103,7 +138,7 @@ namespace MarketplaceSDK.Example.Game
 
         private void RotateCamera()
         {
-            float mouseY = UnityEngine.Input.GetAxis("Mouse X") * 10f;
+            float mouseY = UnityEngine.Input.GetAxis("Mouse X") * _multiplyRotateCamera;
 
             _cameraTransform.Rotate(Vector3.up, mouseY, Space.World);
         }
@@ -116,6 +151,18 @@ namespace MarketplaceSDK.Example.Game
         public void FinishGame()
         {
             _actionGame?.Invoke(false);
+
+            if (_currentPlayer.TryGetComponent(out PlayerMovement movement))
+            {
+                _playerInput.onFire -= movement.OnTouch;
+                _actionGame -= movement.OnSetupGame;
+            }
+
+            if (_currentPlayer.TryGetComponent(out PlayerComponentProvider provider))
+            {
+                provider.playerDetect.action -= TouchTheCritter;
+            }
+            _playerInput.onHold -= RotateCamera;
         }
 
         private void OnInitializeCell()
@@ -176,7 +223,8 @@ namespace MarketplaceSDK.Example.Game
                 int number = UnityEngine.Random.Range(0, cellModels.Count);
                 newPos += _vectorOffsets[cellModels[number].number];
                 newPos.y = 0.15f;
-                CellModel newCritter = new CellModel(_personCreator.CreatePerson(_prefabCritter, newPos, SPHERIX_NAME, UnityEngine.Random.Range(11, 21)), cellModels[number].number, newPos);
+                CellModel newCritter = new CellModel(_personCreator.CreatePerson(_prefabCritter, newPos, SPHERIX_NAME, UnityEngine.Random.Range(1, 11),
+                    UnityEngine.Random.Range(1, 11)), cellModels[number].number, newPos);
 
                 _cellCritters[nextCell.RowNumber, nextCell.ColumnNumber].ListOfCritters[cellModels[number].number] = newCritter;
             }

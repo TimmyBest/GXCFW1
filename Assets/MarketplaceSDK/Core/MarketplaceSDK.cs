@@ -1,10 +1,7 @@
 using MarketplaceSDK.Https;
 using MarketplaceSDK.Models;
 using Newtonsoft.Json;
-using System;
-using System.Linq;
 using System.Threading.Tasks;
-using UnityEngine;
 
 namespace MarketplaceSDK
 {
@@ -15,11 +12,11 @@ namespace MarketplaceSDK
         [Http("https://beta-api.keepsake.gg/web/v1/listings/search")]
         public static async Task<Root> OnSearchListing()
         {
-            var customAttribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("OnSearchListing");
+            var attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("OnSearchListing");
 
-            string response = await httpClient.PostRequest(customAttribute.Url);
-            Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(response);
-            return myDeserializedClass;
+            string response = await httpClient.PostRequest(attribute.Url);
+            Root root = JsonConvert.DeserializeObject<Root>(response);
+            return root;
         }
     }
 }

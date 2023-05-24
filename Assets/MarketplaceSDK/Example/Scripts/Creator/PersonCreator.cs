@@ -10,12 +10,12 @@ namespace MarketplaceSDK.Example.Game.Creator
     {
         private const string MATERIAL_PATH = "Assets/MarketplaceSDK/Example/Materials/";
 
-        public GameObject CreatePerson(GameObject prefab, Vector3 position, string type, int number)
+        public GameObject CreatePerson(GameObject prefab, Vector3 position, string type, int sideColor, int edgeColor)
         {
             GameObject clone = GameObject.Instantiate(prefab, position, prefab.transform.rotation);
 
-            Material sideMaterial = AssetDatabase.LoadAssetAtPath<Material>(MATERIAL_PATH + type + $"/{type}_Col2 {number}.mat");
-            Material frontMaterial = AssetDatabase.LoadAssetAtPath<Material>(MATERIAL_PATH + type + $"/{type}_Col1 {number}.mat");
+            Material sideMaterial = AssetDatabase.LoadAssetAtPath<Material>(MATERIAL_PATH + type + $"/{type}_Col2 {sideColor}.mat");
+            Material frontMaterial = AssetDatabase.LoadAssetAtPath<Material>(MATERIAL_PATH + type + $"/{type}_Col1 {edgeColor}.mat");
             Material eyeMaterial = AssetDatabase.LoadAssetAtPath<Material>(MATERIAL_PATH + type + $"/{type}_Eyes.mat");
 
             if (clone.TryGetComponent(out PersonComponentProvider provider))

@@ -12,7 +12,7 @@ namespace MarketplaceSDK.Models
         public string Description { get; set; }
         public string Image { get; set; }
         public int Favorites { get; set; }
-        public UnityEngine.Object Fields { get; set; }
+        public Field Fields { get; set; }
         public int V { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
