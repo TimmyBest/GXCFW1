@@ -8,8 +8,10 @@ using MarketplaceSDK.Example.Game.Provider;
 using MarketplaceSDK.Example.Interfaces;
 using MarketplaceSDK.Models;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -138,9 +140,12 @@ namespace MarketplaceSDK.Example.Game
 
         private void RotateCamera()
         {
-            float mouseY = UnityEngine.Input.GetAxis("Mouse X") * _multiplyRotateCamera;
+            if (_isGame)
+            {
+                float mouseY = UnityEngine.Input.GetAxis("Mouse X") * _multiplyRotateCamera;
 
-            _cameraTransform.Rotate(Vector3.up, mouseY, Space.World);
+                _cameraTransform.Rotate(Vector3.up, mouseY, Space.World);
+            }
         }
 
         public void StartGame()
