@@ -1,8 +1,10 @@
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 
 namespace MarketplaceSDK.Models
 {
+    [Serializable]
     public class Field
     {
         public string Name { get; set; }

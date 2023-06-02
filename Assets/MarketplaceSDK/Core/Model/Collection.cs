@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 namespace MarketplaceSDK.Models
 {
+    [Serializable]
     public class Collection
     {
         public string Id { get; set; }
@@ -27,7 +28,7 @@ namespace MarketplaceSDK.Models
         public bool Hidden { get; set; }
         public bool Featured { get; set; }
         public List<Royalty> Royalties { get; set; }
-        public int Floor { get; set; }
+        public long Floor { get; set; }
         public int Listed { get; set; }
         public long Volume { get; set; }
         public int TotalSales { get; set; }

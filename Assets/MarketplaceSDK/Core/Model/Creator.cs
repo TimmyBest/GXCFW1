@@ -1,5 +1,8 @@
+using System;
+
 namespace MarketplaceSDK.Models
 {
+    [Serializable]
     public class Creator
     {
         public string Id { get; set; }

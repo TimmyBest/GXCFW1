@@ -27,5 +27,19 @@ namespace MarketplaceSDK.Example.Game.Creator
 
             return clone;
         }
+
+        public void TunningPerson(GameObject currentPlayer, int sideColor, int edgeColor, string type = "Cubix")
+        {
+            Material sideMaterial = AssetDatabase.LoadAssetAtPath<Material>(MATERIAL_PATH + type + $"/{type}_Col2 {sideColor}.mat");
+            Material frontMaterial = AssetDatabase.LoadAssetAtPath<Material>(MATERIAL_PATH + type + $"/{type}_Col1 {edgeColor}.mat");
+            Material eyeMaterial = AssetDatabase.LoadAssetAtPath<Material>(MATERIAL_PATH + type + $"/{type}_Eyes.mat");
+
+            if (currentPlayer.TryGetComponent(out PersonComponentProvider provider))
+            {
+                MeshRenderer meshRenderer = provider.GetMeshRenderer();
+                Material[] materials = { sideMaterial, frontMaterial, eyeMaterial };
+                meshRenderer.materials = materials;
+            }
+        }
     }
 }

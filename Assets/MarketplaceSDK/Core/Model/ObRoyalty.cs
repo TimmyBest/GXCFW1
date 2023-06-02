@@ -1,5 +1,8 @@
+using System;
+
 namespace MarketplaceSDK.Models
 {
+    [Serializable]
     public class ObRoyalty
     {
         public string Type { get; set; }

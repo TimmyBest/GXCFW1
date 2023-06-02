@@ -2,6 +2,7 @@ using System;
 
 namespace MarketplaceSDK.Models
 {
+    [Serializable]
     public class Nft
     {
         public string Id { get; set; }

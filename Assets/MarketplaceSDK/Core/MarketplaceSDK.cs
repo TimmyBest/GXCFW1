@@ -13,7 +13,7 @@ namespace MarketplaceSDK
         [Http("https://beta-api.keepsake.gg/web/v1/listings/search")]
         public static async Task<Root> OnSearchListing()
         {
-            var attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("OnSearchListing");
+            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("OnSearchListing");
 
             string requestBody = @"
             {
@@ -25,6 +25,7 @@ namespace MarketplaceSDK
                 ""featured"": false,
                 ""active"": true
             }";
+
             string response = await httpClient.PostRequest(attribute.Url, requestBody);
             Root root = JsonConvert.DeserializeObject<Root>(response);
 

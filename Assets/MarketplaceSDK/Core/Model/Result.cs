@@ -2,6 +2,7 @@ using System;
 
 namespace MarketplaceSDK.Models
 {
+    [Serializable]
     public class Result
     {
         public string Id { get; set; }

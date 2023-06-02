@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 
 namespace MarketplaceSDK.Models
 {
+    [Serializable]
     public class Root
     {
         public List<Result> Results { get; set; }

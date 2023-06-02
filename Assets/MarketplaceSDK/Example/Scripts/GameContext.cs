@@ -5,13 +5,14 @@ using MarketplaceSDK.Example.Game.Models;
 using MarketplaceSDK.Example.Game.Particle.Provider;
 using MarketplaceSDK.Example.Game.Player.Movement;
 using MarketplaceSDK.Example.Game.Provider;
+using MarketplaceSDK.Example.Game.UI;
 using MarketplaceSDK.Example.Interfaces;
 using MarketplaceSDK.Models;
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 using UnityEngine;
-using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -31,6 +32,7 @@ namespace MarketplaceSDK.Example.Game
         [SerializeField] private GameObject _mainMenu;
         [SerializeField] private Text _scoreText;
         [SerializeField] private Text _timerText;
+        [SerializeField] private UIContext _UIContext;
 
         private GameObject _currentPlayer;
 
@@ -54,19 +56,94 @@ namespace MarketplaceSDK.Example.Game
 
         private void isGame(bool isGame) { _isGame = isGame; }
 
+
+        private byte[] SerializeToByteArray(object obj)
+        {
+            BinaryFormatter formatter = new BinaryFormatter();
+            using (MemoryStream stream = new MemoryStream())
+            {
+                formatter.Serialize(stream, obj);
+                return stream.ToArray();
+            }
+        }
+
+        private T DeserializeFromByteArray<T>(byte[] bytes)
+        {
+            BinaryFormatter formatter = new BinaryFormatter();
+            using (MemoryStream stream = new MemoryStream(bytes))
+            {
+                return (T)formatter.Deserialize(stream);
+            }
+        }
+
+
         private async void Awake()
         {
             Root root = await MarketplaceSDK.OnSearchListing();
             Result result = root.Results[0];
 
-            _mainMenu.SetActive(true);
+            byte[] bytes = SerializeToByteArray(result);
+
+            // Convert the byte array to a Base64 string
+            string base64String = Convert.ToBase64String(bytes);
+
+            // Save the Base64 string in PlayerPrefs
+            PlayerPrefs.SetString("Result", base64String);
+
+            // Save PlayerPrefs to disk (optional)
+            PlayerPrefs.Save();
+
+            Debug.Log("Custom class saved to PlayerPrefs.");
+
+            // Load the Base64 string from PlayerPrefs
+            string bas64String = PlayerPrefs.GetString("Result");
+
+            if (!string.IsNullOrEmpty(bas64String))
+            {
+                // Convert the Base64 string to a byte array
+                byte[] byes = Convert.FromBase64String(bas64String);
+
+                // Deserialize the byte array back to your custom class
+                Result loadedData = DeserializeFromByteArray<Result>(byes);
+
+                // Use the loaded data
+                Debug.Log("Value: " + loadedData.Nft.Name);
+                Debug.Log("Text: " + loadedData.Nft.Description);
+            }
+            else
+            {
+                Debug.Log("No custom class data found in PlayerPrefs.");
+            }
+
+            //_UIContext.OpenMainMenu();
             OnInitializeCell();
             _actionGame += isGame;
 
             InitGame(result);
+
+            _UIContext.OpenMarket(TunningPersonAction, root.Results);
         }
 
-        private void InitGame(Result result)
+        public void TunningPersonAction(Result result)
+        {
+            Vector3 scale = new Vector3(result.Nft.Fields.Size, result.Nft.Fields.Size, result.Nft.Fields.Size);
+            float speed = result.Nft.Fields.Speed;
+
+            int sideColor = (int)ColorType.Parse(typeof(ColorType), result.Nft.Fields.SideColor);
+            int edgeColor = (int)ColorType.Parse(typeof(ColorType), result.Nft.Fields.EdgeColor);
+
+            _gridModel = new GridModel(scale.y);
+
+            if (_currentPlayer.TryGetComponent(out PlayerMovement movement))
+            {
+                movement.OnSetupPlayer(speed, scale);
+                movement.OnSetupGrid(_gridModel);
+            }
+
+            _personCreator.TunningPerson(_currentPlayer, sideColor, edgeColor);
+        }
+
+        public void InitGame(Result result)
         {
             Vector3 scale = new Vector3(result.Nft.Fields.Size, result.Nft.Fields.Size, result.Nft.Fields.Size);
             float speed = result.Nft.Fields.Speed;
@@ -77,7 +154,7 @@ namespace MarketplaceSDK.Example.Game
             _gridModel = new GridModel(scale.y);
 
             _currentPlayer = _personCreator.CreatePerson(_prefabPlayer, new Vector3(_gridModel.cellPositions[0, 0].x, 0f, _gridModel.cellPositions[0, 0].z),
-                CUBIX_NAME, sideColor, edgeColor);
+                CUBIX_NAME, 1, 1);
 
             if (_currentPlayer.TryGetComponent(out PlayerMovement movement))
             {
@@ -102,15 +179,18 @@ namespace MarketplaceSDK.Example.Game
 
         private void UnsubscribeActions()
         {
-            if (_currentPlayer.TryGetComponent(out PlayerMovement movement))
+            if (_currentPlayer != null)
             {
-                _playerInput.onFire -= movement.OnTouch;
-                _actionGame -= movement.OnSetupGame;
-            }
+                if (_currentPlayer.TryGetComponent(out PlayerMovement movement))
+                {
+                    _playerInput.onFire -= movement.OnTouch;
+                    _actionGame -= movement.OnSetupGame;
+                }
 
-            if (_currentPlayer.TryGetComponent(out PlayerComponentProvider provider))
-            {
-                provider.playerDetect.action -= TouchTheCritter;
+                if (_currentPlayer.TryGetComponent(out PlayerComponentProvider provider))
+                {
+                    provider.playerDetect.action -= TouchTheCritter;
+                }
             }
             _playerInput.onHold -= RotateCamera;
         }

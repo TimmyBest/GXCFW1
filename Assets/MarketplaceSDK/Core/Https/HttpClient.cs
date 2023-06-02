@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -8,22 +9,15 @@ namespace MarketplaceSDK.Https
     {
         public async Task<string> PostRequest(string uri, string requestBody)
         {
-            using (UnityWebRequest www = UnityWebRequest.Post(uri, "POST"))
+            using (UnityWebRequest www = UnityWebRequest.Post(uri, ""))
             {
                 byte[] bodyData = System.Text.Encoding.UTF8.GetBytes(requestBody);
 
                 www.uploadHandler = new UploadHandlerRaw(bodyData);
-                www.downloadHandler = new DownloadHandlerBuffer();
                 www.disposeUploadHandlerOnDispose = true;
-                www.disposeDownloadHandlerOnDispose = true;
                 www.SetRequestHeader("Content-Type", "application/json");
 
-                var asyncOperation = www.SendWebRequest();
-
-                while (!asyncOperation.isDone)
-                {
-                    await Task.Yield();
-                }
+                await www.SendWebRequest();
 
                 if (www.result == UnityWebRequest.Result.Success)
                 {
@@ -34,6 +28,20 @@ namespace MarketplaceSDK.Https
                     return www.error;
                 }
             }
+        }
+    }
+
+    public static class UnityWebRequestExtension
+    {
+        public static TaskAwaiter<UnityWebRequest.Result> GetAwaiter(this UnityWebRequestAsyncOperation reqOp)
+        {
+            TaskCompletionSource<UnityWebRequest.Result> tsc = new();
+            reqOp.completed += asyncOp => tsc.TrySetResult(reqOp.webRequest.result);
+
+            if (reqOp.isDone)
+                tsc.TrySetResult(reqOp.webRequest.result);
+
+            return tsc.Task.GetAwaiter();
         }
     }
 }
