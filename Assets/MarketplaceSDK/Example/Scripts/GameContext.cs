@@ -79,9 +79,13 @@ namespace MarketplaceSDK.Example.Game
 
         private async void Awake()
         {
+            string sessionToken = await MarketplaceSDK.OnCreateSession();
+            Debug.Log(sessionToken);
+            Debug.Log(await MarketplaceSDK.OnCreateWallet(sessionToken, "userDaniel"));
+            Debug.Log(await MarketplaceSDK.GetWallet("userDaniel"));
             Root root = await MarketplaceSDK.OnSearchListing();
             Result result = root.Results[0];
-
+            string signature = await MarketplaceSDK.SignPersonalMessage("userDaniel", sessionToken);
             byte[] bytes = SerializeToByteArray(result);
 
             // Convert the byte array to a Base64 string

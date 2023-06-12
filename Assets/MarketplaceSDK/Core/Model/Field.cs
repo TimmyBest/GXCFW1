@@ -10,8 +10,8 @@ namespace MarketplaceSDK.Models
         public string Name { get; set; }
         public string Type { get; set; }
         public List<string> Values { get; set; }
-        public int Size { get; set; }
-        public int Speed { get; set; }
+        public float Size { get; set; }
+        public float Speed { get; set; }
 
         [JsonProperty("edge color")]
         public string EdgeColor { get; set; }
