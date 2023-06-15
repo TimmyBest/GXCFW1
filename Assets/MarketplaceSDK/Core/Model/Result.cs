@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using System;
 
 namespace MarketplaceSDK.Models
@@ -5,6 +6,7 @@ namespace MarketplaceSDK.Models
     [Serializable]
     public class Result
     {
+        [JsonProperty("_id")]
         public string Id { get; set; }
         public string ListingObjectId { get; set; }
         public string NftObjectId { get; set; }

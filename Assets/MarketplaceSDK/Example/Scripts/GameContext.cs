@@ -79,13 +79,20 @@ namespace MarketplaceSDK.Example.Game
 
         private async void Awake()
         {
-            string sessionToken = await MarketplaceSDK.OnCreateSession();
-            Debug.Log(sessionToken);
-            Debug.Log(await MarketplaceSDK.OnCreateWallet(sessionToken, "userDaniel"));
-            Debug.Log(await MarketplaceSDK.GetWallet("userDaniel"));
+            string sessionToken = await MarketplaceSDK.OnCreateSession("anewsecretkey");
+            //string walletId = await MarketplaceSDK.OnCreateWallet(sessionToken, "daniel_new_forwardgame");
+            string walletId = await MarketplaceSDK.GetWallet("daniel_new_forwardgame");
             Root root = await MarketplaceSDK.OnSearchListing();
             Result result = root.Results[0];
-            string signature = await MarketplaceSDK.SignPersonalMessage("userDaniel", sessionToken);
+            string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+            string signature = await MarketplaceSDK.SignPersonalMessage("daniel_new_forwardgame", timestamp, sessionToken);
+            string token = await MarketplaceSDK.LoginToKeepsake(signature, timestamp);
+            CoinRootOwned coinRoot = await MarketplaceSDK.GetOwnedObjectCoins("0x8a2e5b5fd611b3ecaefb3314922c4a4d57e8ab5ad09553b589a44dd406580f13");
+            KioskRootOwned kioskRoot = await MarketplaceSDK.GetOwnedObjectKiosk("0x8a2e5b5fd611b3ecaefb3314922c4a4d57e8ab5ad09553b589a44dd406580f13");
+            Debug.Log(root);
+            string gaslessTx = await MarketplaceSDK.BuildBuyTransaction(token, result.Id, coinRoot.Result.Data[0].Data.ObjectId, kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
+            Debug.Log(gaslessTx);
+            /*
             byte[] bytes = SerializeToByteArray(result);
 
             // Convert the byte array to a Base64 string
@@ -118,6 +125,7 @@ namespace MarketplaceSDK.Example.Game
             {
                 Debug.Log("No custom class data found in PlayerPrefs.");
             }
+            */
 
             //_UIContext.OpenMainMenu();
             OnInitializeCell();
