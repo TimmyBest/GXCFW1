@@ -139,10 +139,6 @@ namespace MarketplaceSDK.Example.Game
             //_actionGame += isGame;
 
             //InitGame(result);
-            Root root = await MarketplaceSDK.OnSearchListing();
-            Result result = root.Results[0];
-
-            _UIContext.OpenMarket(BuyNFT, root.Results, false);
         }
 
         public async void BuyNFT(string nftId)
@@ -171,11 +167,30 @@ namespace MarketplaceSDK.Example.Game
             CoinRootOwned coinRoot = await MarketplaceSDK.GetOwnedObjectCoins(walletId);
             double balance = double.Parse(coinRoot.Result.Data[0].Data.Content.fields.Balance);
             balance = balance / 1000000000;
-            _UIContext.ActivityIndicatorItem.Close();
-            _UIContext.OpenMainMenu(nickname, walletId, balance.ToString());
 
             _nickname = nickname;
             _walletId = walletId;
+
+            Root root = await MarketplaceSDK.OnSearchListing();
+            Result result = root.Results[0];
+
+            _UIContext.OpenMarket(BuyNFT, root.Results, false);
+
+            KioskRootOwned kioskRoot = await MarketplaceSDK.GetOwnedObjectKiosk(_walletId);
+            RootDynamic rootDynamic = await MarketplaceSDK.GetDynamicField(kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
+            List<string> objects = new();
+            foreach(DataDynamic answer in rootDynamic.Result.Data)
+            {
+                if (answer.ObjectType == "0x644fc9ec75f623dcc68338c4cc8d4fcbc2fd8e442a578cbe68a13acb1ee6f363::keepsake_nft::KEEPSAKE")
+                {
+                    objects.Add(answer.ObjectId);
+                }
+            }
+            Root rootNft = await MarketplaceSDK.GetMultiObjects(objects.ToArray());
+            _UIContext.OpenMyNFT(BuyNFT, rootNft.Results, false);
+
+            _UIContext.ActivityIndicatorItem.Close();
+            _UIContext.OpenMainMenu(nickname, walletId, balance.ToString());
         }
 
         public void TunningPersonAction(Result result)

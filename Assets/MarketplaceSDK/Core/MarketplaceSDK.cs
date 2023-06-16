@@ -274,7 +274,7 @@ namespace MarketplaceSDK
         }
 
         [Http("https://api.shinami.com/node/v1/sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6")]
-        public static async Task<string> GetDynamicField(string kiosk)
+        public static async Task<RootDynamic> GetDynamicField(string kiosk)
         {
             HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("GetDynamicField");
 
@@ -288,19 +288,19 @@ namespace MarketplaceSDK
             }}";
 
             string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, "X-API-Key", "a918c93e7b80b633903319d9c6a4c146");
-            //Session session = JsonConvert.DeserializeObject<Session>(response);
+            RootDynamic session = JsonConvert.DeserializeObject<RootDynamic>(response);
 
-            return response;
+            return session;
         }
 
         [Http("https://api.shinami.com/node/v1/sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6")]
-        public static async Task<string> GetMultiObjects(string[] multiObjects)
+        public static async Task<Root> GetMultiObjects(string[] multiObjects)
         {
             HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("GetMultiObjects");
 
             string requestBody = $@"{{ ""jsonrpc"":""2.0"", 
                 ""method"":""sui_multiGetObjects"",
-                ""params"":[[""{multiObjects}""],
+                ""params"":[[""{multiObjects[0]}"",""{multiObjects[1]}""],
                 {{
                         ""showType"": true,
                         ""showOwner"": true,
@@ -311,11 +311,11 @@ namespace MarketplaceSDK
                         ""showStorageRebate"": true
                 }}],     
                 ""id"":1}}";
-
             string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, "X-API-Key", "a918c93e7b80b633903319d9c6a4c146");
-            //Session session = JsonConvert.DeserializeObject<Session>(response);
+            Debug.Log(response);
+            Root root = JsonConvert.DeserializeObject<Root>(response);
 
-            return response;
+            return root;
         }
 
         [Http("https://beta-api.keepsake.gg/web/v1/listings/my")]
