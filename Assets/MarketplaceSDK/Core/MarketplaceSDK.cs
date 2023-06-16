@@ -101,6 +101,7 @@ namespace MarketplaceSDK
         public static async Task<string> LoginToKeepsake(string signature, string timestamp)
         {
             HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("LoginToKeepsake");
+
             string requestBody = $@"{{
                 ""data"": ""keepsake.io::login::{timestamp}"",
                 ""signedMessageResponse"":  ""{signature}""
@@ -190,7 +191,7 @@ namespace MarketplaceSDK
         }
 
         [Http("https://beta-api.keepsake.gg/web/v1/listings/buy/")]
-        public static async Task<string> BuildBuyTransaction(string token, string listingId, string coin, string kiosk)
+        public static async Task<string> BuildBuyTransaction(string token, string objectId, string coin, string kiosk)
         {
             HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("BuildBuyTransaction");
 
@@ -199,8 +200,7 @@ namespace MarketplaceSDK
                 ""buyer_kiosk"": ""{kiosk}""
             }}";
 
-            string response = await httpClient.PostRequestWithAuthorization(attribute.Url + listingId, requestBody, "Authorization", $"Bearer {token}");
-            Debug.Log(response);
+            string response = await httpClient.PostRequestWithAuthorization(attribute.Url + objectId, requestBody, "Authorization", $"Bearer {token}");
             Gasless session = JsonConvert.DeserializeObject<Gasless>(response);
 
             return session.GaslessTx;
@@ -224,7 +224,7 @@ namespace MarketplaceSDK
         }
 
         [Http("https://api.shinami.com/node/v1/sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6")]
-        public static async Task<string> DevInspectTransactionBlock(string walletId, string gaslessTx)
+        public static async Task<ResultDev> DevInspectTransactionBlock(string walletId, string gaslessTx)
         {
             HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("DevInspectTransactionBlock");
 
@@ -236,9 +236,9 @@ namespace MarketplaceSDK
               ""id"":1}}";
 
             string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, "X-API-Key", "a918c93e7b80b633903319d9c6a4c146");
-            //Session session = JsonConvert.DeserializeObject<Session>(response);
+            RootDev session = JsonConvert.DeserializeObject<RootDev>(response);
 
-            return response;
+            return session.Result;
         }
 
         [Http("https://api.shinami.com/wallet/v1")]
@@ -271,6 +271,90 @@ namespace MarketplaceSDK
             //Session session = JsonConvert.DeserializeObject<Session>(response);
 
             return response;
+        }
+
+        [Http("https://api.shinami.com/node/v1/sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6")]
+        public static async Task<string> GetDynamicField(string kiosk)
+        {
+            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("GetDynamicField");
+
+            string requestBody = $@"{{
+              ""jsonrpc"": ""2.0"",
+              ""method"": ""suix_getDynamicFields"",
+              ""params"": [
+                ""{kiosk}""
+              ],
+              ""id"": 1
+            }}";
+
+            string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, "X-API-Key", "a918c93e7b80b633903319d9c6a4c146");
+            //Session session = JsonConvert.DeserializeObject<Session>(response);
+
+            return response;
+        }
+
+        [Http("https://api.shinami.com/node/v1/sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6")]
+        public static async Task<string> GetMultiObjects(string[] multiObjects)
+        {
+            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("GetMultiObjects");
+
+            string requestBody = $@"{{ ""jsonrpc"":""2.0"", 
+                ""method"":""sui_multiGetObjects"",
+                ""params"":[[""{multiObjects}""],
+                {{
+                        ""showType"": true,
+                        ""showOwner"": true,
+                        ""showPreviousTransaction"": true,
+                        ""showDisplay"": false,
+                        ""showContent"": true,
+                        ""showBcs"": false,
+                        ""showStorageRebate"": true
+                }}],     
+                ""id"":1}}";
+
+            string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, "X-API-Key", "a918c93e7b80b633903319d9c6a4c146");
+            //Session session = JsonConvert.DeserializeObject<Session>(response);
+
+            return response;
+        }
+
+        [Http("https://beta-api.keepsake.gg/web/v1/listings/my")]
+        public static async Task<string> GetMyListing(string token)
+        {
+            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("GetMyListing");
+
+            string requestBody = "";
+
+            string response = await httpClient.GetRequestWithAuthorization(attribute.Url, requestBody, "Authorization", $"Bearer {token}");
+            //Session session = JsonConvert.DeserializeObject<Session>(response);
+
+            return response;
+        }
+
+        [Http("https://beta-api.keepsake.gg/web/v1/listings/unlist/")]
+        public static async Task<string> UnlistAsset(string objectId, string token)
+        {
+            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("UnlistAsset");
+
+            string requestBody = "";
+
+            string response = await httpClient.GetRequestWithAuthorization(attribute.Url + objectId, requestBody, "Authorization", $"Bearer {token}");
+            //Session session = JsonConvert.DeserializeObject<Session>(response);
+
+            return response;
+        }
+
+        [Http("https://beta-api.keepsake.gg/web/v1/listings/make_ob_kiosk")]
+        public static async Task<string> MakeObKiosk(string token)
+        {
+            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("MakeObKiosk");
+
+            string requestBody = "";
+
+            string response = await httpClient.GetRequestWithAuthorization(attribute.Url, requestBody, "Authorization", $"Bearer {token}");
+            Gasless session = JsonConvert.DeserializeObject<Gasless>(response);
+
+            return session.GaslessTx;
         }
     }
 }

@@ -16,7 +16,7 @@ namespace MarketplaceSDK.Example.Game.Player.Movement
 
         private float _speed;
         private float _jumpStartTime = 0;
-        private float _horizontalSpeed = 4f;
+        private float _horizontalSpeed = 2f;
         private float _jumpHeight = 1f;
         private float _jumpDuration = 0.75f;
         private float _offsetDuration = 25f;

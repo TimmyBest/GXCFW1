@@ -8,7 +8,7 @@ namespace MarketplaceSDK.Example.Game.UI
         [HideInInspector] public int index;
 
         public Text NameText;
-        public Text DescriptionText;
+        public Text PriceText;
         public Text SpeedText;
         public Text ScaleText;
         public Text SideColorText;

@@ -15,7 +15,8 @@ namespace MarketplaceSDK.Models
         public string NftCollection { get; set; }
         public string ObjectType { get; set; }
         public string Seller { get; set; }
-        public object SalePrice { get; set; }
+        [JsonProperty("sale_price")]
+        public double SalePrice { get; set; }
         public string SaleToken { get; set; }
         public string SaleType { get; set; }
         public object SoldAt { get; set; }
