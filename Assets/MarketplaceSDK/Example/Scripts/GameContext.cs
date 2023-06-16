@@ -186,8 +186,8 @@ namespace MarketplaceSDK.Example.Game
                     objects.Add(answer.ObjectId);
                 }
             }
-            Root rootNft = await MarketplaceSDK.GetMultiObjects(objects.ToArray());
-            _UIContext.OpenMyNFT(BuyNFT, rootNft.Results, false);
+            //Root rootNft = await MarketplaceSDK.GetMultiObjects(objects.ToArray());
+            //_UIContext.OpenMyNFT(BuyNFT, rootNft.Results, false);
 
             _UIContext.ActivityIndicatorItem.Close();
             _UIContext.OpenMainMenu(nickname, walletId, balance.ToString());
