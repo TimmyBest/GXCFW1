@@ -6,6 +6,17 @@ namespace MarketplaceSDK.Models
     [Serializable]
     public class Result
     {
+        public Result(float size, float speed, string edgeColor, string sideColor)
+        {
+            Nft = new Nft();
+            Nft.Fields = new Field();
+
+            Nft.Fields.Size = size;
+            Nft.Fields.Speed = speed;
+            Nft.Fields.EdgeColor = edgeColor;
+            Nft.Fields.SideColor = sideColor;
+        }
+
         [JsonProperty("_id")]
         public string Id { get; set; }
         public string ListingObjectId { get; set; }

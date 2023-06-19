@@ -30,6 +30,29 @@ namespace MarketplaceSDK.Https
             }
         }
 
+        public async Task<string> GetRequest(string uri, string requestBody)
+        {
+            using (UnityWebRequest www = UnityWebRequest.Get(uri))
+            {
+                byte[] bodyData = System.Text.Encoding.UTF8.GetBytes(requestBody);
+
+                www.uploadHandler = new UploadHandlerRaw(bodyData);
+                www.disposeUploadHandlerOnDispose = true;
+                www.SetRequestHeader("Content-Type", "application/json");
+
+                await www.SendWebRequest();
+
+                if (www.result == UnityWebRequest.Result.Success)
+                {
+                    return www.downloadHandler.text;
+                }
+                else
+                {
+                    return www.error;
+                }
+            }
+        }
+
         public async Task<string> PostRequestWithAuthorization(string uri, string requestBody, string keyAuth, string valueAuth)
         {
             using (UnityWebRequest www = UnityWebRequest.Post(uri, ""))

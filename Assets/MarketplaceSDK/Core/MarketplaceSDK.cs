@@ -2,6 +2,7 @@ using MarketplaceSDK.Https;
 using MarketplaceSDK.Models;
 using Newtonsoft.Json;
 using System;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -13,16 +14,16 @@ namespace MarketplaceSDK
         private static HttpClient httpClient = new();
 
         [Http("https://beta-api.keepsake.gg/web/v1/listings/search")]
-        public static async Task<Root> OnSearchListing()
+        public static async Task<Root> OnSearchListing(int salePrice, string nftCollection, string searchName, long gte, long lte)
         {
             HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("OnSearchListing");
 
             string requestBody = $@"
             {{
-                ""sortParams"": {{ ""sale_price"": 1 }},
-                ""nft_collection"": ""6462c8af23a2b24070683fd1"",
-                ""searchName"": ""Whacky Cube Smash"",
-                ""sale_price"": {{ ""gte"": 10000000, ""lte"": 10000000000000 }},
+                ""sortParams"": {{ ""sale_price"": {salePrice} }},
+                ""nft_collection"": ""{nftCollection}"",
+                ""searchName"": ""{searchName}"",
+                ""sale_price"": {{ ""gte"": {gte}, ""lte"": {lte} }},
                 ""sale_type"": ""sale"",
                 ""featured"": false,
                 ""active"": true
@@ -294,13 +295,13 @@ namespace MarketplaceSDK
         }
 
         [Http("https://api.shinami.com/node/v1/sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6")]
-        public static async Task<Root> GetMultiObjects(string[] multiObjects)
+        public static async Task<RootMulti> GetMultiObjects(string[] multiObjects)
         {
             HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("GetMultiObjects");
 
             string requestBody = $@"{{ ""jsonrpc"":""2.0"", 
                 ""method"":""sui_multiGetObjects"",
-                ""params"":[[""{multiObjects[0]}"",""{multiObjects[1]}""],
+                ""params"":[[{string.Join(", ", multiObjects.Select(obj => $"\"{obj}\""))}],
                 {{
                         ""showType"": true,
                         ""showOwner"": true,
@@ -312,8 +313,7 @@ namespace MarketplaceSDK
                 }}],     
                 ""id"":1}}";
             string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, "X-API-Key", "a918c93e7b80b633903319d9c6a4c146");
-            Debug.Log(response);
-            Root root = JsonConvert.DeserializeObject<Root>(response);
+            RootMulti root = JsonConvert.DeserializeObject<RootMulti>(response);
 
             return root;
         }
@@ -342,6 +342,19 @@ namespace MarketplaceSDK
             //Session session = JsonConvert.DeserializeObject<Session>(response);
 
             return response;
+        }
+
+        [Http("https://beta-api.keepsake.gg/web/v1/collections/id/")]
+        public static async Task<RootObjectType> GetObjectType(string collectionId)
+        {
+            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("GetObjectType");
+
+            string requestBody = "";
+
+            string response = await httpClient.GetRequest(attribute.Url + collectionId, requestBody);
+            RootObjectType root = JsonConvert.DeserializeObject<RootObjectType>(response);
+
+            return root;
         }
 
         [Http("https://beta-api.keepsake.gg/web/v1/listings/make_ob_kiosk")]

@@ -1,6 +1,9 @@
+using MarketplaceSDK.Example.Game.Creator;
+using MarketplaceSDK.Example.Game.Enum;
 using MarketplaceSDK.Models;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 
 namespace MarketplaceSDK.Example.Game.UI
@@ -12,12 +15,17 @@ namespace MarketplaceSDK.Example.Game.UI
         [SerializeField] private GameObject _cardInfo;
         [SerializeField] private GameObject _mainMenuWindow;
         [SerializeField] private GameObject _loginWindow;
+        [SerializeField] private GameObject _infoWindow;
 
         [SerializeField] private LoginItem _loginItem;
         [SerializeField] private MainMenuItem _mainMenuItem;
         public ActivityIndicatorItem ActivityIndicatorItem;
         [SerializeField] private MarketMenuItem _marketMenuItem;
         [SerializeField] private MyNFTMenuItem _myNftMenuItem;
+
+
+        // need to delete
+        [SerializeField] private GameObject prefabCubix;
 
 
         private void Awake()
@@ -54,10 +62,21 @@ namespace MarketplaceSDK.Example.Game.UI
                 Transform childTransform = _contentMarket.GetChild(i);
                 Destroy(childTransform.gameObject);
             }
+            PersonCreator personCreator = new PersonCreator();
 
             for (int i = 0; i < results.Count; i++)
             {
                 CardInfoItem cardInfo = GameObject.Instantiate(_cardInfo, _contentMarket).GetComponent<CardInfoItem>();
+
+                GameObject objectModel = personCreator.CreatePerson(prefabCubix, new Vector3(0, -10000, 0), "Cubix",
+                    (int)ColorType.Parse(typeof(ColorType), results[i].Nft.Fields.SideColor),
+                    (int)ColorType.Parse(typeof(ColorType), results[i].Nft.Fields.EdgeColor));
+
+                SnapshotCamera snapshotCamera = SnapshotCamera.MakeSnapshotCamera(0);
+                Texture2D snapshot = snapshotCamera.TakeObjectSnapshot(objectModel);
+                cardInfo.CubeImage.sprite = Sprite.Create(snapshot, new Rect(0, 0, 128, 128), new Vector2());
+                Destroy(objectModel);
+                Destroy(snapshotCamera);
 
                 cardInfo.NameText.text = results[i].Nft.Name;
                 cardInfo.PriceText.text = (results[i].SalePrice / 1000000000).ToString() + " SUI";
@@ -75,7 +94,12 @@ namespace MarketplaceSDK.Example.Game.UI
             }
         }
 
-        public void OpenMyNFT(Action<string> action, List<Result> results, bool open = true)
+        public void OpenInfoWindow()
+        {
+            _infoWindow.SetActive(true);
+        }
+
+        public void OpenMyNFT(Action<Result> action, List<ResultMulti> results, bool open = true)
         {
             _myNftMenuItem.gameObject.SetActive(open);
 
@@ -84,23 +108,41 @@ namespace MarketplaceSDK.Example.Game.UI
                 Transform childTransform = _contentMyNFT.GetChild(i);
                 Destroy(childTransform.gameObject);
             }
+            PersonCreator personCreator = new PersonCreator();
 
             for (int i = 0; i < results.Count; i++)
             {
                 CardInfoItem cardInfo = GameObject.Instantiate(_cardInfo, _contentMyNFT).GetComponent<CardInfoItem>();
 
-                cardInfo.NameText.text = results[i].Nft.Name;
-                cardInfo.PriceText.text = (results[i].SalePrice / 1000000000).ToString() + " SUI";
-                cardInfo.SpeedText.text = "Speed: " + results[i].Nft.Fields.Speed.ToString();
-                cardInfo.ScaleText.text = "Size: " + results[i].Nft.Fields.Size.ToString();
-                cardInfo.SideColorText.text = "Side Color: " + results[i].Nft.Fields.SideColor;
-                cardInfo.EdgeColorText.text = "Edge Color: " + results[i].Nft.Fields.EdgeColor;
-                cardInfo.buyBtnText.text = "Buy";
+                float speed = float.Parse(results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[1].Fields.Value, CultureInfo.InvariantCulture.NumberFormat);
+                float size = float.Parse(results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[0].Fields.Value, CultureInfo.InvariantCulture.NumberFormat);
+                string edgeColor = results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[3].Fields.Value;
+                string sideColor = results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[2].Fields.Value;
+
+                GameObject objectModel =  personCreator.CreatePerson(prefabCubix, new Vector3(0, -10000, 0), "Cubix",
+                    (int)ColorType.Parse(typeof(ColorType), sideColor),
+                    (int)ColorType.Parse(typeof(ColorType), edgeColor));
+
+                SnapshotCamera snapshotCamera = SnapshotCamera.MakeSnapshotCamera(0);
+                Texture2D snapshot = snapshotCamera.TakeObjectSnapshot(objectModel);
+
+                Destroy(objectModel);
+                Destroy(snapshotCamera);
+
+                cardInfo.CubeImage.sprite = Sprite.Create(snapshot, new Rect(0, 0, 128, 128), new Vector2());
+                cardInfo.NameText.text = results[i].Data.Content.Fields.Name;
+                cardInfo.SpeedText.text = "Speed: " + speed.ToString();
+                cardInfo.ScaleText.text = "Size: " + size.ToString();
+                cardInfo.SideColorText.text = "Side Color: " + edgeColor;
+                cardInfo.EdgeColorText.text = "Edge Color: " + sideColor;
+                cardInfo.buyBtnText.text = "Select";
+                cardInfo.PriceText.text = "Owned";
 
                 cardInfo.index = i;
 
                 cardInfo.buyBtn.onClick.AddListener(delegate {
-                    action?.Invoke(results[cardInfo.index].Id);
+                    action?.Invoke(new Result(size, speed, edgeColor, sideColor));
+                    _myNftMenuItem.gameObject.SetActive(false);
                 });
             }
         }

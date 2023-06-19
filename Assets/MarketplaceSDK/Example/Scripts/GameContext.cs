@@ -29,7 +29,6 @@ namespace MarketplaceSDK.Example.Game
         [SerializeField] private PlayerInput _playerInput;
         [SerializeField] private GameObject _particleSplash;
         [SerializeField] private Transform _cameraTransform;
-        [SerializeField] private GameObject _mainMenu;
         [SerializeField] private Text _scoreText;
         [SerializeField] private Text _timerText;
         [SerializeField] private UIContext _UIContext;
@@ -153,10 +152,9 @@ namespace MarketplaceSDK.Example.Game
             string gaslessTx = await MarketplaceSDK.BuildBuyTransaction(token, nftId, coinRoot.Result.Data[0].Data.ObjectId, kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
             ResultDev rootDev = await MarketplaceSDK.DevInspectTransactionBlock(_walletId, gaslessTx);
             string response = await MarketplaceSDK.ExecuteGaslessTransactionBlock(_nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
+            Debug.Log(response);
 
-            Root root = await MarketplaceSDK.OnSearchListing();
-            _UIContext.ActivityIndicatorItem.Close();
-            _UIContext.OpenMarket(BuyNFT, root.Results, true);
+            AuthorizationAPI(_nickname);
         }
 
         public async void AuthorizationAPI(string nickname)
@@ -171,23 +169,24 @@ namespace MarketplaceSDK.Example.Game
             _nickname = nickname;
             _walletId = walletId;
 
-            Root root = await MarketplaceSDK.OnSearchListing();
+            Root root = await MarketplaceSDK.OnSearchListing(1, "6462c8af23a2b24070683fd1", "Whacky Cube Smash", 10000000, 10000000000000);
             Result result = root.Results[0];
 
             _UIContext.OpenMarket(BuyNFT, root.Results, false);
 
             KioskRootOwned kioskRoot = await MarketplaceSDK.GetOwnedObjectKiosk(_walletId);
             RootDynamic rootDynamic = await MarketplaceSDK.GetDynamicField(kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
+            RootObjectType rootObjectType = await MarketplaceSDK.GetObjectType("6462c8af23a2b24070683fd1");
             List<string> objects = new();
             foreach(DataDynamic answer in rootDynamic.Result.Data)
             {
-                if (answer.ObjectType == "0x644fc9ec75f623dcc68338c4cc8d4fcbc2fd8e442a578cbe68a13acb1ee6f363::keepsake_nft::KEEPSAKE")
+                if (answer.ObjectType == rootObjectType.Collection.FullType)
                 {
                     objects.Add(answer.ObjectId);
                 }
             }
-            //Root rootNft = await MarketplaceSDK.GetMultiObjects(objects.ToArray());
-            //_UIContext.OpenMyNFT(BuyNFT, rootNft.Results, false);
+            RootMulti rootNft = await MarketplaceSDK.GetMultiObjects(objects.ToArray());
+            _UIContext.OpenMyNFT(InitGame, rootNft.Result, false);
 
             _UIContext.ActivityIndicatorItem.Close();
             _UIContext.OpenMainMenu(nickname, walletId, balance.ToString());
@@ -210,6 +209,11 @@ namespace MarketplaceSDK.Example.Game
             }
 
             _personCreator.TunningPerson(_currentPlayer, sideColor, edgeColor);
+
+            _isGame = true;
+            _UIContext.OpenInfoWindow();
+
+            StartGame();
         }
 
         public void InitGame(Result result)
@@ -239,6 +243,8 @@ namespace MarketplaceSDK.Example.Game
                 provider.playerDetect.action += TouchTheCritter;
             }
             _playerInput.onHold += RotateCamera;
+
+            TunningPersonAction(result);
         }
 
         private void OnApplicationQuit()
