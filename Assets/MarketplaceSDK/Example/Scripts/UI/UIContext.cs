@@ -99,7 +99,7 @@ namespace MarketplaceSDK.Example.Game.UI
             _infoWindow.SetActive(true);
         }
 
-        public void OpenMyNFT(Action<Result> action, List<ResultMulti> results, bool open = true)
+        public void OpenMyNFT(Action<Result> actionGame, Action<string> sellNft, List<ResultMulti> results, bool open = true)
         {
             _myNftMenuItem.gameObject.SetActive(open);
 
@@ -136,14 +136,22 @@ namespace MarketplaceSDK.Example.Game.UI
                 cardInfo.SideColorText.text = "Side Color: " + edgeColor;
                 cardInfo.EdgeColorText.text = "Edge Color: " + sideColor;
                 cardInfo.buyBtnText.text = "Select";
+                cardInfo.sellBtnText.text = "Sell";
                 cardInfo.PriceText.text = "Owned";
 
-                cardInfo.index = i;
+                cardInfo.Id = results[i].Data.Content.Fields.Id.Id;
 
                 cardInfo.buyBtn.onClick.AddListener(delegate {
-                    action?.Invoke(new Result(size, speed, edgeColor, sideColor));
+                    actionGame?.Invoke(new Result(size, speed, edgeColor, sideColor));
                     _myNftMenuItem.gameObject.SetActive(false);
                 });
+                cardInfo.sellBtn.onClick.AddListener(delegate
+                {
+                    sellNft?.Invoke(cardInfo.Id);
+                    _myNftMenuItem.gameObject.SetActive(false);
+                });
+
+                cardInfo.sellBtn.gameObject.SetActive(true);
             }
         }
 

@@ -10,6 +10,7 @@ using MarketplaceSDK.Example.Interfaces;
 using MarketplaceSDK.Models;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using UnityEngine;
@@ -82,14 +83,14 @@ namespace MarketplaceSDK.Example.Game
         private async void Awake()
         {
             //string sessionToken = await MarketplaceSDK.OnCreateSession("anewsecretkey");
-            //string walletId = await MarketplaceSDK.OnCreateWallet(sessionToken, "daniel_new_forwardgame");
-            //string walletId = await MarketplaceSDK.GetWallet(nickname);
+            //string walletId = await MarketplaceSDK.OnCreateWallet(sessionToken, "tim_new_forwardgame");
+            //string walletId = await MarketplaceSDK.GetWallet("tim_new_forwardgame");
             //string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
-            //string signature = await MarketplaceSDK.SignPersonalMessage(nickname, timestamp, sessionToken);
+            //string signature = await MarketplaceSDK.SignPersonalMessage("tim_new_forwardgame", timestamp, sessionToken);
             //string token = await MarketplaceSDK.LoginToKeepsake(signature, timestamp);
             //string gaslessTxKiosk = await MarketplaceSDK.MakeObKiosk(token);
             //ResultDev rootDev = await MarketplaceSDK.DevInspectTransactionBlock(walletId, gaslessTxKiosk);
-            //await MarketplaceSDK.ExecuteGaslessTransactionBlock(nickname, sessionToken, gaslessTxKiosk, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
+            //await MarketplaceSDK.ExecuteGaslessTransactionBlock("tim_new_forwardgame", sessionToken, gaslessTxKiosk, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
             //CoinRootOwned coinRoot = await MarketplaceSDK.GetOwnedObjectCoins(walletId);
             //KioskRootOwned kioskRoot = await MarketplaceSDK.GetOwnedObjectKiosk(walletId);
             //string gaslessTx = await MarketplaceSDK.BuildBuyTransaction(token, result.Id, coinRoot.Result.Data[0].Data.ObjectId, kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
@@ -149,7 +150,23 @@ namespace MarketplaceSDK.Example.Game
             string token = await MarketplaceSDK.LoginToKeepsake(signature, timestamp);
             CoinRootOwned coinRoot = await MarketplaceSDK.GetOwnedObjectCoins(_walletId);
             KioskRootOwned kioskRoot = await MarketplaceSDK.GetOwnedObjectKiosk(_walletId);
-            string gaslessTx = await MarketplaceSDK.BuildBuyTransaction(token, nftId, coinRoot.Result.Data[0].Data.ObjectId, kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
+            string gaslessTx = await MarketplaceSDK.BuildBuyTransaction(token, nftId, FindHighestNumber(coinRoot.Result.Data), kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
+            ResultDev rootDev = await MarketplaceSDK.DevInspectTransactionBlock(_walletId, gaslessTx);
+            string response = await MarketplaceSDK.ExecuteGaslessTransactionBlock(_nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
+            Debug.Log(response);
+
+            AuthorizationAPI(_nickname);
+        }
+
+        public async void SellNFT(string nftId)
+        {
+            _UIContext.ActivityIndicatorItem.Open();
+            string sessionToken = await MarketplaceSDK.OnCreateSession("anewsecretkey");
+            string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+            string signature = await MarketplaceSDK.SignPersonalMessage(_nickname, timestamp, sessionToken);
+            string token = await MarketplaceSDK.LoginToKeepsake(signature, timestamp);
+            KioskRootOwned kioskRoot = await MarketplaceSDK.GetOwnedObjectKiosk(_walletId);
+            string gaslessTx = await MarketplaceSDK.BuildSellTransaction(token, nftId, "100000000", kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
             ResultDev rootDev = await MarketplaceSDK.DevInspectTransactionBlock(_walletId, gaslessTx);
             string response = await MarketplaceSDK.ExecuteGaslessTransactionBlock(_nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
             Debug.Log(response);
@@ -162,9 +179,8 @@ namespace MarketplaceSDK.Example.Game
             _UIContext.ActivityIndicatorItem.Open();
 
             string walletId = await MarketplaceSDK.GetWallet(nickname);
-            CoinRootOwned coinRoot = await MarketplaceSDK.GetOwnedObjectCoins(walletId);
-            double balance = double.Parse(coinRoot.Result.Data[0].Data.Content.fields.Balance);
-            balance = balance / 1000000000;
+            RootBalance coinRoot = await MarketplaceSDK.GetWalletBalance(walletId);
+            double balance = coinRoot.Result.TotalBalance / 1000000000;
 
             _nickname = nickname;
             _walletId = walletId;
@@ -173,7 +189,6 @@ namespace MarketplaceSDK.Example.Game
             Result result = root.Results[0];
 
             _UIContext.OpenMarket(BuyNFT, root.Results, false);
-
             KioskRootOwned kioskRoot = await MarketplaceSDK.GetOwnedObjectKiosk(_walletId);
             RootDynamic rootDynamic = await MarketplaceSDK.GetDynamicField(kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
             RootObjectType rootObjectType = await MarketplaceSDK.GetObjectType("6462c8af23a2b24070683fd1");
@@ -186,7 +201,7 @@ namespace MarketplaceSDK.Example.Game
                 }
             }
             RootMulti rootNft = await MarketplaceSDK.GetMultiObjects(objects.ToArray());
-            _UIContext.OpenMyNFT(InitGame, rootNft.Result, false);
+            _UIContext.OpenMyNFT(InitGame, SellNFT, rootNft.Result, false);
 
             _UIContext.ActivityIndicatorItem.Close();
             _UIContext.OpenMainMenu(nickname, walletId, balance.ToString());
@@ -334,6 +349,29 @@ namespace MarketplaceSDK.Example.Game
                     _cellCritters[i, j] = new CritterCell(i, j);
                 }
             }
+        }
+
+        public string FindHighestNumber(List<CoinDataOwned> coins)
+        {
+            if (coins == null || coins.Count == 0)
+            {
+                throw new ArgumentException("The array is null or empty.");
+            }
+            double highestNumber = double.Parse(coins[0].Data.Content.fields.Balance, CultureInfo.InvariantCulture.NumberFormat);
+            string result = coins[0].Data.ObjectId;
+
+            for (int i = 1; i < coins.Count; i++)
+            {
+                double currentNumber = double.Parse(coins[i].Data.Content.fields.Balance, CultureInfo.InvariantCulture.NumberFormat);
+
+                if (currentNumber > highestNumber)
+                {
+                    highestNumber = currentNumber;
+                    result = coins[i].Data.ObjectId;
+                }
+            }
+
+            return result;
         }
 
         private void TouchTheCritter(Collider collider)

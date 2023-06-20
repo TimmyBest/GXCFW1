@@ -270,7 +270,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 538.0704, y: -83}
+  m_AnchoredPosition: {x: 474.14258, y: -83}
   m_SizeDelta: {x: 306.06174, y: 166}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1382939445088979081
@@ -1702,7 +1702,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 885, y: 1080}
+  m_SizeDelta: {x: 885, y: 1415}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1961343683600082353
 MonoBehaviour:
@@ -1717,6 +1717,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   index: 0
+  Id: 
   CubeImage: {fileID: 1382939445625661838}
   NameText: {fileID: 8743614995030401382}
   PriceText: {fileID: 4734605038924254372}
@@ -1725,7 +1726,9 @@ MonoBehaviour:
   SideColorText: {fileID: 7981259177773580045}
   EdgeColorText: {fileID: 2461315036674791163}
   buyBtnText: {fileID: 7309104769090075775}
+  sellBtnText: {fileID: 6092620391699934028}
   buyBtn: {fileID: 1382939446619225086}
+  sellBtn: {fileID: 1382939445088979191}
 --- !u!1 &1382939446144657142
 GameObject:
   m_ObjectHideFlags: 0
@@ -2090,7 +2093,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 538.0704, y: -83}
+  m_AnchoredPosition: {x: 474.14258, y: -83}
   m_SizeDelta: {x: 306.06174, y: 166}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1382939446308920191

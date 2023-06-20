@@ -160,6 +160,27 @@ namespace MarketplaceSDK
         }
 
         [Http("https://api.shinami.com/node/v1/sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6")]
+        public static async Task<RootBalance> GetWalletBalance(string walletId)
+        {
+            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("GetWalletBalance");
+
+            string requestBody = $@"{{
+                ""jsonrpc"": ""2.0"",
+                ""method"": ""suix_getBalance"",
+                ""params"": [
+                    ""{walletId}"",
+                    ""0x2::sui::SUI""
+                ],
+                ""id"": 1
+            }}";
+
+            string response = await httpClient.PostRequest(attribute.Url, requestBody);
+            RootBalance session = JsonConvert.DeserializeObject<RootBalance>(response);
+
+            return session;
+        }
+
+        [Http("https://api.shinami.com/node/v1/sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6")]
         public static async Task<KioskRootOwned> GetOwnedObjectKiosk(string walletId)
         {
             HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("GetOwnedObjectKiosk");
@@ -219,9 +240,9 @@ namespace MarketplaceSDK
             }}";
 
             string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, "Authorization", $"Bearer {token}");
-            //Session session = JsonConvert.DeserializeObject<Session>(response);
+            Gasless session = JsonConvert.DeserializeObject<Gasless>(response);
 
-            return response;
+            return session.GaslessTx;
         }
 
         [Http("https://api.shinami.com/node/v1/sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6")]
