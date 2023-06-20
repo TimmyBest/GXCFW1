@@ -236,9 +236,6 @@ namespace MarketplaceSDK.Example.Game
             Vector3 scale = new Vector3(result.Nft.Fields.Size, result.Nft.Fields.Size, result.Nft.Fields.Size);
             float speed = result.Nft.Fields.Speed;
 
-            int sideColor = (int)ColorType.Parse(typeof(ColorType), result.Nft.Fields.SideColor);
-            int edgeColor = (int)ColorType.Parse(typeof(ColorType), result.Nft.Fields.EdgeColor);
-
             _gridModel = new GridModel(scale.y);
 
             _currentPlayer = _personCreator.CreatePerson(_prefabPlayer, new Vector3(_gridModel.cellPositions[0, 0].x, 0f, _gridModel.cellPositions[0, 0].z),

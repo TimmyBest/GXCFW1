@@ -16,7 +16,7 @@ namespace MarketplaceSDK.Example.Game.Player.Movement
 
         private float _speed;
         private float _jumpStartTime = 0;
-        private float _horizontalSpeed = 2f;
+        private float _horizontalSpeed = 2.5f;
         private float _jumpHeight = 1f;
         private float _jumpDuration = 0.75f;
         private float _offsetDuration = 25f;
@@ -85,28 +85,25 @@ namespace MarketplaceSDK.Example.Game.Player.Movement
 
             if (_moving)
             {
-                if (_speed == 0f) _moving = false;
+            if (_speed == 0f) _moving = false;
+            float timeElapsed = Time.time - _jumpStartTime;
 
-                float timeElapsed = Time.time - _jumpStartTime;
-                if (timeElapsed >= _jumpDuration)
+                float jumpHeightAtTime = Mathf.Sin(timeElapsed / _jumpDuration * Mathf.PI) * _jumpHeight;
+                jumpHeightAtTime = jumpHeightAtTime + _gridModel.cellPositions[_currentCell.RowNumber, _currentCell.ColumnNumber].y;
+                Vector3 currentPosition = transform.position;
+                Vector3 targetPosition = 
+                    new Vector3(
+                        _gridModel.cellPositions[_currentCell.RowNumber, _currentCell.ColumnNumber].x + _horizontalSpeed * Time.deltaTime,
+                        jumpHeightAtTime,
+                        _gridModel.cellPositions[_currentCell.RowNumber, _currentCell.ColumnNumber].z + _horizontalSpeed * Time.deltaTime
+                );
+
+                transform.position = Vector3.MoveTowards(currentPosition, targetPosition, _horizontalSpeed * _speed * Time.deltaTime);
+                if (Vector3.Distance(currentPosition, new Vector3(
+                    targetPosition.x, _gridModel.cellPositions[_currentCell.RowNumber, _currentCell.ColumnNumber].y, targetPosition.z)) < 0.1f) 
                 {
                     _moving = false;
-
                     _jumpStartTime = 0;
-                }
-                else
-                {
-                    float jumpHeightAtTime = Mathf.Sin(timeElapsed / _jumpDuration * Mathf.PI) * _jumpHeight;
-                    jumpHeightAtTime = jumpHeightAtTime + _gridModel.cellPositions[_currentCell.RowNumber, _currentCell.ColumnNumber].y - 0.1f;
-                    Vector3 currentPosition = transform.position;
-                    Vector3 targetPosition = 
-                        new Vector3(
-                            _gridModel.cellPositions[_currentCell.RowNumber, _currentCell.ColumnNumber].x + _horizontalSpeed * Time.deltaTime,
-                            jumpHeightAtTime,
-                            _gridModel.cellPositions[_currentCell.RowNumber, _currentCell.ColumnNumber].z + _horizontalSpeed * Time.deltaTime
-                    );
-
-                    transform.position = Vector3.MoveTowards(currentPosition, targetPosition, _horizontalSpeed * _speed * Time.deltaTime);
                 }
             }
         }
