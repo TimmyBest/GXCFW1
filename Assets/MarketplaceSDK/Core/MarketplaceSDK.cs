@@ -17,13 +17,12 @@ namespace MarketplaceSDK
         public static async Task<Root> OnSearchListing(int salePrice, string nftCollection, string searchName, long gte, long lte)
         {
             HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("OnSearchListing");
-
+            //""sale_price"": {{ ""gte"": {gte}, ""lte"": {lte} }},
             string requestBody = $@"
             {{
                 ""sortParams"": {{ ""sale_price"": {salePrice} }},
                 ""nft_collection"": ""{nftCollection}"",
                 ""searchName"": ""{searchName}"",
-                ""sale_price"": {{ ""gte"": {gte}, ""lte"": {lte} }},
                 ""sale_type"": ""sale"",
                 ""featured"": false,
                 ""active"": true
@@ -340,16 +339,16 @@ namespace MarketplaceSDK
         }
 
         [Http("https://beta-api.keepsake.gg/web/v1/listings/my")]
-        public static async Task<string> GetMyListing(string token)
+        public static async Task<Root> GetMyListing(string token)
         {
             HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("GetMyListing");
 
             string requestBody = "";
 
             string response = await httpClient.GetRequestWithAuthorization(attribute.Url, requestBody, "Authorization", $"Bearer {token}");
-            //Session session = JsonConvert.DeserializeObject<Session>(response);
+            Root root = JsonConvert.DeserializeObject<Root>(response);
 
-            return response;
+            return root;
         }
 
         [Http("https://beta-api.keepsake.gg/web/v1/listings/unlist/")]
@@ -360,9 +359,9 @@ namespace MarketplaceSDK
             string requestBody = "";
 
             string response = await httpClient.GetRequestWithAuthorization(attribute.Url + objectId, requestBody, "Authorization", $"Bearer {token}");
-            //Session session = JsonConvert.DeserializeObject<Session>(response);
+            Gasless session = JsonConvert.DeserializeObject<Gasless>(response);
 
-            return response;
+            return session.GaslessTx;
         }
 
         [Http("https://beta-api.keepsake.gg/web/v1/collections/id/")]

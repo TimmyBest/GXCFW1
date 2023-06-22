@@ -1000,6 +1000,7 @@ MonoBehaviour:
   _marketMenuItem: {fileID: 1595577049}
   _myNftMenuItem: {fileID: 1519515806}
   prefabCubix: {fileID: 4832735907861482026, guid: 4035619ce078c7f43830c6890d9ca339, type: 3}
+  _gameContext: {fileID: 629435130}
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
@@ -3639,7 +3640,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.252, y: 0.6848437}
   m_AnchorMax: {x: 0.753, y: 0.73718756}
-  m_AnchoredPosition: {x: 1.289978, y: 0.020019531}
+  m_AnchoredPosition: {x: 1.2900391, y: 0.020019531}
   m_SizeDelta: {x: 2.2399902, y: -2.9000244}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6345108888315535848
@@ -5339,7 +5340,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.117000006, y: 0.22442186}
   m_AnchorMax: {x: 0.88500005, y: 0.75084376}
-  m_AnchoredPosition: {x: 0.099975586, y: 1}
+  m_AnchoredPosition: {x: 0.100097656, y: 1}
   m_SizeDelta: {x: 0.2000122, y: 7.5}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6345108889217390236
@@ -5447,7 +5448,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.143, y: 0.24400002}
   m_AnchorMax: {x: 0.85700005, y: 0.32060945}
-  m_AnchoredPosition: {x: 2.0999756, y: -3.5998535}
+  m_AnchoredPosition: {x: 2.1000977, y: -3.5998535}
   m_SizeDelta: {x: 0.2999878, y: 3.399994}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &6345108889224418851

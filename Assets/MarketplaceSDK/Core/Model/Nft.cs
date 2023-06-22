@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using System;
 
 namespace MarketplaceSDK.Models
@@ -8,6 +9,7 @@ namespace MarketplaceSDK.Models
         public string Id { get; set; }
         public string NftCollection { get; set; }
         public int Network { get; set; }
+        [JsonProperty("object_id")]
         public string ObjectId { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }

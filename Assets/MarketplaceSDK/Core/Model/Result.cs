@@ -19,6 +19,7 @@ namespace MarketplaceSDK.Models
 
         [JsonProperty("_id")]
         public string Id { get; set; }
+        [JsonProperty("listing_object_id")]
         public string ListingObjectId { get; set; }
         public string NftObjectId { get; set; }
         public string Market { get; set; }
@@ -41,6 +42,7 @@ namespace MarketplaceSDK.Models
         public Creator Creator { get; set; }
         public int TotalCount { get; set; }
         public string OrderBook { get; set; }
+        [JsonProperty("seller_kiosk")]
         public string SellerKiosk { get; set; }
     }
 }

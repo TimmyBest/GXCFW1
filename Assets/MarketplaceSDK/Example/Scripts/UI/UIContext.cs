@@ -4,6 +4,7 @@ using MarketplaceSDK.Models;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace MarketplaceSDK.Example.Game.UI
@@ -27,21 +28,27 @@ namespace MarketplaceSDK.Example.Game.UI
         // need to delete
         [SerializeField] private GameObject prefabCubix;
 
+        [SerializeField] private GameContext _gameContext;
 
         private void Awake()
         {
-            _mainMenuItem.MarketBtn.onClick.AddListener(delegate {
+            _mainMenuItem.MarketBtn.onClick.AddListener(async delegate {
+                await _gameContext.UpdateWindows();
+
                 _mainMenuWindow.SetActive(false);
                 _marketMenuItem.gameObject.SetActive(true);
             });
 
-            _mainMenuItem.MyNftBtn.onClick.AddListener(delegate {
+            _mainMenuItem.MyNftBtn.onClick.AddListener(async delegate {
+                await _gameContext.UpdateWindows();
+
                 _mainMenuWindow.SetActive(false);
                 _myNftMenuItem.gameObject.SetActive(true);
             });
 
             _marketMenuItem.backBtn.onClick.AddListener(delegate
             {
+
                 _marketMenuItem.gameObject.SetActive(false);
                 _mainMenuWindow.SetActive(true);
             });
@@ -53,7 +60,7 @@ namespace MarketplaceSDK.Example.Game.UI
             });
         }
 
-        public void OpenMarket(Action<string> action, List<Result> results, bool open = true)
+        public void OpenMarket(Action<string> action, Action<string> unlistAction, List<Result> results, string kiosk, bool open = true)
         {
             _marketMenuItem.gameObject.SetActive(open);
 
@@ -84,13 +91,25 @@ namespace MarketplaceSDK.Example.Game.UI
                 cardInfo.ScaleText.text = "Size: " + results[i].Nft.Fields.Size.ToString();
                 cardInfo.SideColorText.text = "Side Color: " + results[i].Nft.Fields.SideColor;
                 cardInfo.EdgeColorText.text = "Edge Color: " + results[i].Nft.Fields.EdgeColor;
-                cardInfo.buyBtnText.text = "Buy";
 
                 cardInfo.index = i;
 
-                cardInfo.buyBtn.onClick.AddListener(delegate {
-                    action?.Invoke(results[cardInfo.index].Id);
-                });
+                if (kiosk == results[i].SellerKiosk) 
+                {
+                    cardInfo.BuyBtnText.text = "Unlist";
+                    cardInfo.BuyBtn.onClick.AddListener(delegate {
+                        unlistAction?.Invoke(results[cardInfo.index].Id);
+                        _marketMenuItem.gameObject.SetActive(false);
+                    });
+                }
+                else
+                {
+                    cardInfo.BuyBtnText.text = "Buy";
+                    cardInfo.BuyBtn.onClick.AddListener(delegate {
+                        action?.Invoke(results[cardInfo.index].Id);
+                        _marketMenuItem.gameObject.SetActive(false);
+                    });
+                }
             }
         }
 
@@ -99,7 +118,7 @@ namespace MarketplaceSDK.Example.Game.UI
             _infoWindow.SetActive(true);
         }
 
-        public void OpenMyNFT(Action<Result> actionGame, Action<string> sellNft, List<ResultMulti> results, bool open = true)
+        public void OpenMyNFT(Action<Result> actionGame, Action<string, double> sellNft, Action<string> unlistAction, List<ResultMulti> results, List<Result> resultListing, string kiosk, bool open = true)
         {
             _myNftMenuItem.gameObject.SetActive(open);
 
@@ -116,8 +135,8 @@ namespace MarketplaceSDK.Example.Game.UI
 
                 float speed = float.Parse(results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[1].Fields.Value, CultureInfo.InvariantCulture.NumberFormat);
                 float size = float.Parse(results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[0].Fields.Value, CultureInfo.InvariantCulture.NumberFormat);
-                string edgeColor = results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[3].Fields.Value;
-                string sideColor = results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[2].Fields.Value;
+                string edgeColor = results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[2].Fields.Value;
+                string sideColor = results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[3].Fields.Value;
 
                 GameObject objectModel =  personCreator.CreatePerson(prefabCubix, new Vector3(0, -10000, 0), "Cubix",
                     (int)ColorType.Parse(typeof(ColorType), sideColor),
@@ -133,25 +152,59 @@ namespace MarketplaceSDK.Example.Game.UI
                 cardInfo.NameText.text = results[i].Data.Content.Fields.Name;
                 cardInfo.SpeedText.text = "Speed: " + speed.ToString();
                 cardInfo.ScaleText.text = "Size: " + size.ToString();
-                cardInfo.SideColorText.text = "Side Color: " + edgeColor;
-                cardInfo.EdgeColorText.text = "Edge Color: " + sideColor;
-                cardInfo.buyBtnText.text = "Select";
-                cardInfo.sellBtnText.text = "Sell";
+                cardInfo.SideColorText.text = "Side Color: " + sideColor;
+                cardInfo.EdgeColorText.text = "Edge Color: " + edgeColor;
+                cardInfo.BuyBtnText.text = "Select";
+                cardInfo.SellBtnText.text = "Sell";
                 cardInfo.PriceText.text = "Owned";
 
                 cardInfo.Id = results[i].Data.Content.Fields.Id.Id;
+                bool listed = false;
+                string listingId = "";
+                foreach(Result res in resultListing)
+                {
+                    if (cardInfo.Id == res.Nft.ObjectId)
+                    {
+                        listingId = res.Id;
+                        listed = true;
+                    }
+                }
 
-                cardInfo.buyBtn.onClick.AddListener(delegate {
+                cardInfo.BuyBtn.onClick.AddListener(delegate {
                     actionGame?.Invoke(new Result(size, speed, edgeColor, sideColor));
                     _myNftMenuItem.gameObject.SetActive(false);
                 });
-                cardInfo.sellBtn.onClick.AddListener(delegate
-                {
-                    sellNft?.Invoke(cardInfo.Id);
-                    _myNftMenuItem.gameObject.SetActive(false);
-                });
 
-                cardInfo.sellBtn.gameObject.SetActive(true);
+                if (!listed)
+                {
+                    cardInfo.SellBtn.onClick.AddListener(delegate
+                    {
+                        cardInfo.SellingTooltip.SetActive(true);
+                    });
+
+                    cardInfo.ConfirmBtn.onClick.AddListener(delegate
+                    {
+                        sellNft?.Invoke(cardInfo.Id, double.Parse(cardInfo.sellInputField.text, CultureInfo.InvariantCulture.NumberFormat));
+                        _myNftMenuItem.gameObject.SetActive(false);
+                    });
+                    cardInfo.CancelBtn.onClick.AddListener(delegate
+                    {
+                        cardInfo.SellingTooltip.SetActive(false);
+                    });
+
+                }
+                else
+                {
+                    cardInfo.SellBtnText.text = "Unlist";
+
+                    cardInfo.SellBtn.onClick.AddListener(delegate
+                    {
+                        unlistAction?.Invoke(listingId);
+                        _myNftMenuItem.gameObject.SetActive(false);
+                    });
+                }
+
+                cardInfo.SellBtn.gameObject.SetActive(true);
             }
         }
 

@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -158,7 +159,22 @@ namespace MarketplaceSDK.Example.Game
             AuthorizationAPI(_nickname);
         }
 
-        public async void SellNFT(string nftId)
+        public async void UnlistAsset(string nftId)
+        {
+            _UIContext.ActivityIndicatorItem.Open();
+            string sessionToken = await MarketplaceSDK.OnCreateSession("anewsecretkey");
+            string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+            string signature = await MarketplaceSDK.SignPersonalMessage(_nickname, timestamp, sessionToken);
+            string token = await MarketplaceSDK.LoginToKeepsake(signature, timestamp);
+            string gaslessTx = await MarketplaceSDK.UnlistAsset(nftId, token);
+            ResultDev rootDev = await MarketplaceSDK.DevInspectTransactionBlock(_walletId, gaslessTx);
+            string response = await MarketplaceSDK.ExecuteGaslessTransactionBlock(_nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
+            Debug.Log(response);
+
+            AuthorizationAPI(_nickname);
+        }
+
+        public async void SellNFT(string nftId, double amount)
         {
             _UIContext.ActivityIndicatorItem.Open();
             string sessionToken = await MarketplaceSDK.OnCreateSession("anewsecretkey");
@@ -166,7 +182,7 @@ namespace MarketplaceSDK.Example.Game
             string signature = await MarketplaceSDK.SignPersonalMessage(_nickname, timestamp, sessionToken);
             string token = await MarketplaceSDK.LoginToKeepsake(signature, timestamp);
             KioskRootOwned kioskRoot = await MarketplaceSDK.GetOwnedObjectKiosk(_walletId);
-            string gaslessTx = await MarketplaceSDK.BuildSellTransaction(token, nftId, "100000000", kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
+            string gaslessTx = await MarketplaceSDK.BuildSellTransaction(token, nftId, (amount * 1000000000).ToString(), kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
             ResultDev rootDev = await MarketplaceSDK.DevInspectTransactionBlock(_walletId, gaslessTx);
             string response = await MarketplaceSDK.ExecuteGaslessTransactionBlock(_nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
             Debug.Log(response);
@@ -185,26 +201,41 @@ namespace MarketplaceSDK.Example.Game
             _nickname = nickname;
             _walletId = walletId;
 
-            Root root = await MarketplaceSDK.OnSearchListing(1, "6462c8af23a2b24070683fd1", "Whacky Cube Smash", 10000000, 10000000000000);
-            Result result = root.Results[0];
+            _UIContext.ActivityIndicatorItem.Close();
+            _UIContext.OpenMainMenu(nickname, walletId, balance.ToString());
+        }
 
-            _UIContext.OpenMarket(BuyNFT, root.Results, false);
+        public async Task UpdateWindows()
+        {
+            _UIContext.ActivityIndicatorItem.Open();
+
+            Root root = await MarketplaceSDK.OnSearchListing(1, "6462c8af23a2b24070683fd1", "Whacky Cube Smash", 10000000, 10000000000000);
+
             KioskRootOwned kioskRoot = await MarketplaceSDK.GetOwnedObjectKiosk(_walletId);
             RootDynamic rootDynamic = await MarketplaceSDK.GetDynamicField(kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
             RootObjectType rootObjectType = await MarketplaceSDK.GetObjectType("6462c8af23a2b24070683fd1");
             List<string> objects = new();
-            foreach(DataDynamic answer in rootDynamic.Result.Data)
+
+            foreach (DataDynamic answer in rootDynamic.Result.Data)
             {
                 if (answer.ObjectType == rootObjectType.Collection.FullType)
                 {
                     objects.Add(answer.ObjectId);
                 }
             }
+
             RootMulti rootNft = await MarketplaceSDK.GetMultiObjects(objects.ToArray());
-            _UIContext.OpenMyNFT(InitGame, SellNFT, rootNft.Result, false);
+
+            string sessionToken = await MarketplaceSDK.OnCreateSession("anewsecretkey");
+            string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+            string signature = await MarketplaceSDK.SignPersonalMessage(_nickname, timestamp, sessionToken);
+            string token = await MarketplaceSDK.LoginToKeepsake(signature, timestamp);
+            Root rootMyListing = await MarketplaceSDK.GetMyListing(token);
+
+            _UIContext.OpenMyNFT(InitGame, SellNFT, UnlistAsset, rootNft.Result, rootMyListing.Results, kioskRoot.Result.Data[0].Data.Display.Data.Kiosk, false);
+            _UIContext.OpenMarket(BuyNFT, UnlistAsset, root.Results, kioskRoot.Result.Data[0].Data.Display.Data.Kiosk, false);
 
             _UIContext.ActivityIndicatorItem.Close();
-            _UIContext.OpenMainMenu(nickname, walletId, balance.ToString());
         }
 
         public void TunningPersonAction(Result result)
