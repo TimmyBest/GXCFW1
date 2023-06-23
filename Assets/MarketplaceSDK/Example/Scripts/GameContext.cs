@@ -150,6 +150,16 @@ namespace MarketplaceSDK.Example.Game
             string signature = await MarketplaceSDK.SignPersonalMessage(_nickname, timestamp, sessionToken);
             string token = await MarketplaceSDK.LoginToKeepsake(signature, timestamp);
             CoinRootOwned coinRoot = await MarketplaceSDK.GetOwnedObjectCoins(_walletId);
+            if(coinRoot.Result.Data.Count > 1)
+            {
+                string gaslessTxMerge = await MarketplaceSDK.MergeCoins(token, coinRoot.Result.Data.ToArray());
+                ResultDev rootDevMerge = await MarketplaceSDK.DevInspectTransactionBlock(_walletId, gaslessTxMerge);
+                string responseMerge = await MarketplaceSDK.ExecuteGaslessTransactionBlock(_nickname, sessionToken, gaslessTxMerge, rootDevMerge.Effects.GasUsed.ComputationCost + rootDevMerge.Effects.GasUsed.StorageCost);
+                Debug.Log(responseMerge);
+                await Task.Delay(3000);
+
+                coinRoot = await MarketplaceSDK.GetOwnedObjectCoins(_walletId);
+            }
             KioskRootOwned kioskRoot = await MarketplaceSDK.GetOwnedObjectKiosk(_walletId);
             string gaslessTx = await MarketplaceSDK.BuildBuyTransaction(token, nftId, FindHighestNumber(coinRoot.Result.Data), kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
             ResultDev rootDev = await MarketplaceSDK.DevInspectTransactionBlock(_walletId, gaslessTx);

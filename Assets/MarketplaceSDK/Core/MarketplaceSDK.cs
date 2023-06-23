@@ -244,6 +244,21 @@ namespace MarketplaceSDK
             return session.GaslessTx;
         }
 
+        [Http("https://beta-api.keepsake.gg/web/v1/listings/mergeCoins")]
+        public static async Task<string> MergeCoins(string token, CoinDataOwned[] multiCoin)
+        {
+            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("MergeCoins");
+
+            string requestBody = $@"{{
+                ""coins"": [{string.Join(", ", multiCoin.Select(obj => $"\"{obj.Data.ObjectId}\""))}]
+            }}";
+
+            string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, "Authorization", $"Bearer {token}");
+            Gasless session = JsonConvert.DeserializeObject<Gasless>(response);
+
+            return session.GaslessTx;
+        }
+
         [Http("https://api.shinami.com/node/v1/sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6")]
         public static async Task<ResultDev> DevInspectTransactionBlock(string walletId, string gaslessTx)
         {
