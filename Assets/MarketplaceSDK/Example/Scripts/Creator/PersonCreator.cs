@@ -8,15 +8,15 @@ namespace MarketplaceSDK.Example.Game.Creator
 {
     public class PersonCreator : IPersonCreator
     {
-        private const string MATERIAL_PATH = "Assets/MarketplaceSDK/Example/Materials/";
+        private const string MATERIAL_PATH = "MarketplaceSDK/Materials/";
 
         public GameObject CreatePerson(GameObject prefab, Vector3 position, string type, int sideColor, int edgeColor)
         {
             GameObject clone = GameObject.Instantiate(prefab, position, prefab.transform.rotation);
 
-            Material sideMaterial = AssetDatabase.LoadAssetAtPath<Material>(MATERIAL_PATH + type + $"/{type}_Col2 {sideColor}.mat");
-            Material frontMaterial = AssetDatabase.LoadAssetAtPath<Material>(MATERIAL_PATH + type + $"/{type}_Col1 {edgeColor}.mat");
-            Material eyeMaterial = AssetDatabase.LoadAssetAtPath<Material>(MATERIAL_PATH + type + $"/{type}_Eyes.mat");
+            Material sideMaterial = Resources.Load<Material>(MATERIAL_PATH + type + $"/{type}_Col2 {sideColor}");
+            Material frontMaterial = Resources.Load<Material>(MATERIAL_PATH + type + $"/{type}_Col1 {edgeColor}");
+            Material eyeMaterial = Resources.Load<Material>(MATERIAL_PATH + type + $"/{type}_Eyes");
 
             if (clone.TryGetComponent(out PersonComponentProvider provider))
             {
@@ -30,9 +30,9 @@ namespace MarketplaceSDK.Example.Game.Creator
 
         public void TunningPerson(GameObject currentPlayer, int sideColor, int edgeColor, string type = "Cubix")
         {
-            Material sideMaterial = AssetDatabase.LoadAssetAtPath<Material>(MATERIAL_PATH + type + $"/{type}_Col2 {sideColor}.mat");
-            Material frontMaterial = AssetDatabase.LoadAssetAtPath<Material>(MATERIAL_PATH + type + $"/{type}_Col1 {edgeColor}.mat");
-            Material eyeMaterial = AssetDatabase.LoadAssetAtPath<Material>(MATERIAL_PATH + type + $"/{type}_Eyes.mat");
+            Material sideMaterial = Resources.Load<Material>(MATERIAL_PATH + type + $"/{type}_Col2 {sideColor}");
+            Material frontMaterial = Resources.Load<Material>(MATERIAL_PATH + type + $"/{type}_Col1 {edgeColor}");
+            Material eyeMaterial = Resources.Load<Material>(MATERIAL_PATH + type + $"/{type}_Eyes");
 
             if (currentPlayer.TryGetComponent(out PersonComponentProvider provider))
             {
