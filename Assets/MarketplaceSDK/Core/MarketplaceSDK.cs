@@ -13,27 +13,6 @@ namespace MarketplaceSDK
     {
         private static HttpClient httpClient = new();
 
-        [Http("https://beta-api.keepsake.gg/web/v1/listings/search")]
-        public static async Task<Root> OnSearchListing(int salePrice, string nftCollection, string searchName, long gte, long lte)
-        {
-            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("OnSearchListing");
-            //""sale_price"": {{ ""gte"": {gte}, ""lte"": {lte} }},
-            string requestBody = $@"
-            {{
-                ""sortParams"": {{ ""sale_price"": {salePrice} }},
-                ""nft_collection"": ""{nftCollection}"",
-                ""searchName"": ""{searchName}"",
-                ""sale_type"": ""sale"",
-                ""featured"": false,
-                ""active"": true
-            }}";
-
-            string response = await httpClient.PostRequest(attribute.Url, requestBody);
-            Root root = JsonConvert.DeserializeObject<Root>(response);
-
-            return root;
-        }
-
         [Http("https://api.shinami.com/key/v1/")]
         public static async Task<string> OnCreateSession(string secretKey)
         {
@@ -94,23 +73,9 @@ namespace MarketplaceSDK
             string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, "X-API-Key", "sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6");
             Session session = JsonConvert.DeserializeObject<Session>(response);
 
+            if(session.Result == null) { return null; }
+
             return session.Result;
-        }
-
-        [Http("https://beta-api.keepsake.gg/web/v1/users/sign_up")]
-        public static async Task<string> LoginToKeepsake(string signature, string timestamp)
-        {
-            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("LoginToKeepsake");
-
-            string requestBody = $@"{{
-                ""data"": ""keepsake.io::login::{timestamp}"",
-                ""signedMessageResponse"":  ""{signature}""
-            }}";
-
-            string response = await httpClient.PostRequest(attribute.Url, requestBody);
-            KeepsakeRoot session = JsonConvert.DeserializeObject<KeepsakeRoot>(response);
-
-            return session.token;
         }
 
         [Http("https://api.shinami.com/node/v1/sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6")]
@@ -211,54 +176,6 @@ namespace MarketplaceSDK
             return session;
         }
 
-        [Http("https://beta-api.keepsake.gg/web/v1/listings/buy/")]
-        public static async Task<string> BuildBuyTransaction(string token, string objectId, string coin, string kiosk)
-        {
-            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("BuildBuyTransaction");
-
-            string requestBody = $@"{{
-                ""coin"": ""{coin}"",
-                ""buyer_kiosk"": ""{kiosk}""
-            }}";
-
-            string response = await httpClient.PostRequestWithAuthorization(attribute.Url + objectId, requestBody, "Authorization", $"Bearer {token}");
-            Gasless session = JsonConvert.DeserializeObject<Gasless>(response);
-
-            return session.GaslessTx;
-        }
-
-        [Http("https://beta-api.keepsake.gg/web/v1/listings/sell")]
-        public static async Task<string> BuildSellTransaction(string token, string nftId, string suiPrice, string kiosk)
-        {
-            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("BuildSellTransaction");
-
-            string requestBody = $@"{{
-                ""nft_id"": ""{nftId}"",
-                ""sui_price"": ""{suiPrice}"",
-                ""seller_kiosk"": ""{kiosk}""
-            }}";
-
-            string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, "Authorization", $"Bearer {token}");
-            Gasless session = JsonConvert.DeserializeObject<Gasless>(response);
-
-            return session.GaslessTx;
-        }
-
-        [Http("https://beta-api.keepsake.gg/web/v1/listings/mergeCoins")]
-        public static async Task<string> MergeCoins(string token, CoinDataOwned[] multiCoin)
-        {
-            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("MergeCoins");
-
-            string requestBody = $@"{{
-                ""coins"": [{string.Join(", ", multiCoin.Select(obj => $"\"{obj.Data.ObjectId}\""))}]
-            }}";
-
-            string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, "Authorization", $"Bearer {token}");
-            Gasless session = JsonConvert.DeserializeObject<Gasless>(response);
-
-            return session.GaslessTx;
-        }
-
         [Http("https://api.shinami.com/node/v1/sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6")]
         public static async Task<ResultDev> DevInspectTransactionBlock(string walletId, string gaslessTx)
         {
@@ -351,6 +268,90 @@ namespace MarketplaceSDK
             RootMulti root = JsonConvert.DeserializeObject<RootMulti>(response);
 
             return root;
+        }
+
+        [Http("https://beta-api.keepsake.gg/web/v1/listings/search")]
+        public static async Task<Root> OnSearchListing(int salePrice, string nftCollection, string searchName)
+        {
+            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("OnSearchListing");
+            string requestBody = $@"
+            {{
+                ""sortParams"": {{ ""sale_price"": {salePrice} }},
+                ""nft_collection"": ""{nftCollection}"",
+                ""searchName"": ""{searchName}"",
+                ""sale_type"": ""sale"",
+                ""featured"": false,
+                ""active"": true
+            }}";
+
+            string response = await httpClient.PostRequest(attribute.Url, requestBody);
+            Root root = JsonConvert.DeserializeObject<Root>(response);
+
+            return root;
+        }
+
+        [Http("https://beta-api.keepsake.gg/web/v1/users/sign_up")]
+        public static async Task<string> LoginToKeepsake(string signature, string timestamp)
+        {
+            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("LoginToKeepsake");
+
+            string requestBody = $@"{{
+                ""data"": ""keepsake.io::login::{timestamp}"",
+                ""signedMessageResponse"":  ""{signature}""
+            }}";
+
+            string response = await httpClient.PostRequest(attribute.Url, requestBody);
+            KeepsakeRoot session = JsonConvert.DeserializeObject<KeepsakeRoot>(response);
+
+            return session.token;
+        }
+
+        [Http("https://beta-api.keepsake.gg/web/v1/listings/buy/")]
+        public static async Task<string> BuildBuyTransaction(string token, string objectId, string coin, string kiosk)
+        {
+            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("BuildBuyTransaction");
+
+            string requestBody = $@"{{
+                ""coin"": ""{coin}"",
+                ""buyer_kiosk"": ""{kiosk}""
+            }}";
+
+            string response = await httpClient.PostRequestWithAuthorization(attribute.Url + objectId, requestBody, "Authorization", $"Bearer {token}");
+            Gasless session = JsonConvert.DeserializeObject<Gasless>(response);
+
+            return session.GaslessTx;
+        }
+
+        [Http("https://beta-api.keepsake.gg/web/v1/listings/sell")]
+        public static async Task<string> BuildSellTransaction(string token, string nftId, string suiPrice, string kiosk)
+        {
+            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("BuildSellTransaction");
+
+            string requestBody = $@"{{
+                ""nft_id"": ""{nftId}"",
+                ""sui_price"": ""{suiPrice}"",
+                ""seller_kiosk"": ""{kiosk}""
+            }}";
+
+            string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, "Authorization", $"Bearer {token}");
+            Gasless session = JsonConvert.DeserializeObject<Gasless>(response);
+
+            return session.GaslessTx;
+        }
+
+        [Http("https://beta-api.keepsake.gg/web/v1/listings/mergeCoins")]
+        public static async Task<string> MergeCoins(string token, CoinDataOwned[] multiCoin)
+        {
+            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("MergeCoins");
+
+            string requestBody = $@"{{
+                ""coins"": [{string.Join(", ", multiCoin.Select(obj => $"\"{obj.Data.ObjectId}\""))}]
+            }}";
+
+            string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, "Authorization", $"Bearer {token}");
+            Gasless session = JsonConvert.DeserializeObject<Gasless>(response);
+
+            return session.GaslessTx;
         }
 
         [Http("https://beta-api.keepsake.gg/web/v1/listings/my")]

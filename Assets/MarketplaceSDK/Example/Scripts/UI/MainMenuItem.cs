@@ -11,5 +11,6 @@ namespace MarketplaceSDK.Example.Game.UI
 
         public Button MyNftBtn;
         public Button MarketBtn;
+        public Button UnloginBtn;
     }
 }

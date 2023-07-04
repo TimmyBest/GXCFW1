@@ -1,12 +1,12 @@
+using Newtonsoft.Json;
 using System;
 
 namespace MarketplaceSDK.Models
 {
     [Serializable]
-    public class Session
+    public class Session : RootOwned
     {
-        public string JsonRpc { get; set; }
+        [JsonProperty("result")]
         public string Result { get; set; }
-        public int Id { get; set; }
     }
 }

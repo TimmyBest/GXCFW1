@@ -4,7 +4,6 @@ using MarketplaceSDK.Models;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace MarketplaceSDK.Example.Game.UI
@@ -57,6 +56,13 @@ namespace MarketplaceSDK.Example.Game.UI
             {
                 _myNftMenuItem.gameObject.SetActive(false);
                 _mainMenuWindow.SetActive(true);
+            });
+
+            _mainMenuItem.UnloginBtn.onClick.AddListener(delegate
+            {
+                _loginItem.ClearItem();
+                _mainMenuWindow.SetActive(false);
+                _loginWindow.SetActive(true);
             });
         }
 
@@ -216,12 +222,20 @@ namespace MarketplaceSDK.Example.Game.UI
             _mainMenuItem.BalanceText.text = balance + " SUI";
         }
 
-        public void OpenLoginWindow(Action<string> action)
+        public void OpenLoginWindow(Action<string, string> actionLogin, Action<string, string> actionRegistr, string errorMessage = "")
         {
             _loginWindow.SetActive(true);
 
+            _loginItem.ErrorText.gameObject.SetActive(errorMessage.Length > 0);
+            _loginItem.ErrorText.text = errorMessage;
+
             _loginItem.LoginBtn.onClick.AddListener(delegate {
-                action?.Invoke(_loginItem.NicknameField.text);
+                actionLogin?.Invoke(_loginItem.NicknameField.text, _loginItem.SecretKeyField.text);
+                _loginWindow.SetActive(false);
+            });
+
+            _loginItem.SignUpBtn.onClick.AddListener(delegate {
+                actionRegistr?.Invoke(_loginItem.NicknameField.text, _loginItem.SecretKeyField.text);
                 _loginWindow.SetActive(false);
             });
         }

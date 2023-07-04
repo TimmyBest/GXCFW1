@@ -11,8 +11,6 @@ using MarketplaceSDK.Models;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -57,95 +55,19 @@ namespace MarketplaceSDK.Example.Game
 
         private string _nickname = "";
         private string _walletId = "";
+        private string _secretKey = "";
 
-        private void isGame(bool isGame) { _isGame = isGame; }
-
-
-        private byte[] SerializeToByteArray(object obj)
+        private void Awake()
         {
-            BinaryFormatter formatter = new BinaryFormatter();
-            using (MemoryStream stream = new MemoryStream())
-            {
-                formatter.Serialize(stream, obj);
-                return stream.ToArray();
-            }
-        }
-
-        private T DeserializeFromByteArray<T>(byte[] bytes)
-        {
-            BinaryFormatter formatter = new BinaryFormatter();
-            using (MemoryStream stream = new MemoryStream(bytes))
-            {
-                return (T)formatter.Deserialize(stream);
-            }
-        }
-
-
-        private async void Awake()
-        {
-            //string sessionToken = await MarketplaceSDK.OnCreateSession("anewsecretkey");
-            //string walletId = await MarketplaceSDK.OnCreateWallet(sessionToken, "tim_new_forwardgame");
-            //string walletId = await MarketplaceSDK.GetWallet("tim_new_forwardgame");
-            //string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
-            //string signature = await MarketplaceSDK.SignPersonalMessage("tim_new_forwardgame", timestamp, sessionToken);
-            //string token = await MarketplaceSDK.LoginToKeepsake(signature, timestamp);
-            //string gaslessTxKiosk = await MarketplaceSDK.MakeObKiosk(token);
-            //ResultDev rootDev = await MarketplaceSDK.DevInspectTransactionBlock(walletId, gaslessTxKiosk);
-            //await MarketplaceSDK.ExecuteGaslessTransactionBlock("tim_new_forwardgame", sessionToken, gaslessTxKiosk, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
-            //CoinRootOwned coinRoot = await MarketplaceSDK.GetOwnedObjectCoins(walletId);
-            //KioskRootOwned kioskRoot = await MarketplaceSDK.GetOwnedObjectKiosk(walletId);
-            //string gaslessTx = await MarketplaceSDK.BuildBuyTransaction(token, result.Id, coinRoot.Result.Data[0].Data.ObjectId, kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
-            //ResultDev rootDev = await MarketplaceSDK.DevInspectTransactionBlock(walletId, gaslessTx);
-            //string response = await MarketplaceSDK.ExecuteGaslessTransactionBlock(nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
-            //Debug.Log(response);
-            //Debug.Log(await MarketplaceSDK.GetMyListing(token));
-            /*
-            byte[] bytes = SerializeToByteArray(result);
-
-            // Convert the byte array to a Base64 string
-            string base64String = Convert.ToBase64String(bytes);
-
-            // Save the Base64 string in PlayerPrefs
-            PlayerPrefs.SetString("Result", base64String);
-
-            // Save PlayerPrefs to disk (optional)
-            PlayerPrefs.Save();
-
-            Debug.Log("Custom class saved to PlayerPrefs.");
-
-            // Load the Base64 string from PlayerPrefs
-            string bas64String = PlayerPrefs.GetString("Result");
-
-            if (!string.IsNullOrEmpty(bas64String))
-            {
-                // Convert the Base64 string to a byte array
-                byte[] byes = Convert.FromBase64String(bas64String);
-
-                // Deserialize the byte array back to your custom class
-                Result loadedData = DeserializeFromByteArray<Result>(byes);
-
-                // Use the loaded data
-                Debug.Log("Value: " + loadedData.Nft.Name);
-                Debug.Log("Text: " + loadedData.Nft.Description);
-            }
-            else
-            {
-                Debug.Log("No custom class data found in PlayerPrefs.");
-            }
-            */
-
-            //_UIContext.OpenMainMenu();
-            _UIContext.OpenLoginWindow(AuthorizationAPI);
             OnInitializeCell();
-            //_actionGame += isGame;
 
-            //InitGame(result);
+            _UIContext.OpenLoginWindow(AuthorizationAPI, SignUpAccount);
         }
 
         public async void BuyNFT(string nftId)
         {
             _UIContext.ActivityIndicatorItem.Open();
-            string sessionToken = await MarketplaceSDK.OnCreateSession("anewsecretkey");
+            string sessionToken = await MarketplaceSDK.OnCreateSession(_secretKey);
             string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
             string signature = await MarketplaceSDK.SignPersonalMessage(_nickname, timestamp, sessionToken);
             string token = await MarketplaceSDK.LoginToKeepsake(signature, timestamp);
@@ -166,13 +88,13 @@ namespace MarketplaceSDK.Example.Game
             string response = await MarketplaceSDK.ExecuteGaslessTransactionBlock(_nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
             Debug.Log(response);
 
-            AuthorizationAPI(_nickname);
+            AuthorizationAPI(_nickname, _secretKey);
         }
 
         public async void UnlistAsset(string nftId)
         {
             _UIContext.ActivityIndicatorItem.Open();
-            string sessionToken = await MarketplaceSDK.OnCreateSession("anewsecretkey");
+            string sessionToken = await MarketplaceSDK.OnCreateSession(_secretKey);
             string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
             string signature = await MarketplaceSDK.SignPersonalMessage(_nickname, timestamp, sessionToken);
             string token = await MarketplaceSDK.LoginToKeepsake(signature, timestamp);
@@ -181,13 +103,13 @@ namespace MarketplaceSDK.Example.Game
             string response = await MarketplaceSDK.ExecuteGaslessTransactionBlock(_nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
             Debug.Log(response);
 
-            AuthorizationAPI(_nickname);
+            AuthorizationAPI(_nickname, _secretKey);
         }
 
         public async void SellNFT(string nftId, double amount)
         {
             _UIContext.ActivityIndicatorItem.Open();
-            string sessionToken = await MarketplaceSDK.OnCreateSession("anewsecretkey");
+            string sessionToken = await MarketplaceSDK.OnCreateSession(_secretKey);
             string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
             string signature = await MarketplaceSDK.SignPersonalMessage(_nickname, timestamp, sessionToken);
             string token = await MarketplaceSDK.LoginToKeepsake(signature, timestamp);
@@ -197,19 +119,55 @@ namespace MarketplaceSDK.Example.Game
             string response = await MarketplaceSDK.ExecuteGaslessTransactionBlock(_nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
             Debug.Log(response);
 
-            AuthorizationAPI(_nickname);
+            AuthorizationAPI(_nickname, _secretKey);
         }
 
-        public async void AuthorizationAPI(string nickname)
+        public async void SignUpAccount(string nickname, string secretKey)
+        {
+            _UIContext.ActivityIndicatorItem.Open();
+
+            string sessionToken = await MarketplaceSDK.OnCreateSession(secretKey);
+            string walletId = await MarketplaceSDK.OnCreateWallet(sessionToken, nickname);
+            if (walletId == null)
+            {
+                _UIContext.OpenLoginWindow(AuthorizationAPI, SignUpAccount, "Wallet ID already exist!");
+                _UIContext.ActivityIndicatorItem.Close();
+                return;
+            }
+
+            _nickname = nickname;
+            _secretKey = secretKey;
+
+            AuthorizationAPI(_nickname, _secretKey);
+        }
+
+        public async void AuthorizationAPI(string nickname, string secretKey)
         {
             _UIContext.ActivityIndicatorItem.Open();
 
             string walletId = await MarketplaceSDK.GetWallet(nickname);
+            if (walletId == null)
+            {
+                _UIContext.OpenLoginWindow(AuthorizationAPI, SignUpAccount, "Wallet ID not found!");
+                _UIContext.ActivityIndicatorItem.Close();
+                return;
+            }
+            string sessionToken = await MarketplaceSDK.OnCreateSession(secretKey);
+            string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+            string signature = await MarketplaceSDK.SignPersonalMessage(nickname, timestamp, sessionToken);
+            if(signature == null)
+            {
+                _UIContext.OpenLoginWindow(AuthorizationAPI, SignUpAccount, "Wrong secret key!");
+                _UIContext.ActivityIndicatorItem.Close();
+                return;
+            }
+
             RootBalance coinRoot = await MarketplaceSDK.GetWalletBalance(walletId);
             double balance = coinRoot.Result.TotalBalance / 1000000000;
 
             _nickname = nickname;
             _walletId = walletId;
+            _secretKey = secretKey;
 
             _UIContext.ActivityIndicatorItem.Close();
             _UIContext.OpenMainMenu(nickname, walletId, balance.ToString());
@@ -219,7 +177,7 @@ namespace MarketplaceSDK.Example.Game
         {
             _UIContext.ActivityIndicatorItem.Open();
 
-            Root root = await MarketplaceSDK.OnSearchListing(1, "6462c8af23a2b24070683fd1", "Whacky Cube Smash", 10000000, 10000000000000);
+            Root root = await MarketplaceSDK.OnSearchListing(1, "6462c8af23a2b24070683fd1", "Whacky Cube Smash");
 
             KioskRootOwned kioskRoot = await MarketplaceSDK.GetOwnedObjectKiosk(_walletId);
             RootDynamic rootDynamic = await MarketplaceSDK.GetDynamicField(kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
@@ -236,7 +194,7 @@ namespace MarketplaceSDK.Example.Game
 
             RootMulti rootNft = await MarketplaceSDK.GetMultiObjects(objects.ToArray());
 
-            string sessionToken = await MarketplaceSDK.OnCreateSession("anewsecretkey");
+            string sessionToken = await MarketplaceSDK.OnCreateSession(_secretKey);
             string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
             string signature = await MarketplaceSDK.SignPersonalMessage(_nickname, timestamp, sessionToken);
             string token = await MarketplaceSDK.LoginToKeepsake(signature, timestamp);
