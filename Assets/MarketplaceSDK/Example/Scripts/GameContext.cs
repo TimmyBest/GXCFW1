@@ -7,11 +7,9 @@ using MarketplaceSDK.Example.Game.Player.Movement;
 using MarketplaceSDK.Example.Game.Provider;
 using MarketplaceSDK.Example.Game.UI;
 using MarketplaceSDK.Example.Interfaces;
-using MarketplaceSDK.Models;
+using MarketplaceSDK.Core.Models;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -53,157 +51,11 @@ namespace MarketplaceSDK.Example.Game
         private const string CUBIX_NAME = "Cubix";
         private const string SPHERIX_NAME = "Spherix";
 
-        private string _nickname = "";
-        private string _walletId = "";
-        private string _secretKey = "";
-
         private void Awake()
         {
             OnInitializeCell();
 
-            _UIContext.OpenLoginWindow(AuthorizationAPI, SignUpAccount);
-        }
-
-        public async void BuyNFT(string nftId)
-        {
-            _UIContext.ActivityIndicatorItem.Open();
-            string sessionToken = await MarketplaceSDK.OnCreateSession(_secretKey);
-            string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
-            string signature = await MarketplaceSDK.SignPersonalMessage(_nickname, timestamp, sessionToken);
-            string token = await MarketplaceSDK.LoginToKeepsake(signature, timestamp);
-            CoinRootOwned coinRoot = await MarketplaceSDK.GetOwnedObjectCoins(_walletId);
-            if(coinRoot.Result.Data.Count > 1)
-            {
-                string gaslessTxMerge = await MarketplaceSDK.MergeCoins(token, coinRoot.Result.Data.ToArray());
-                ResultDev rootDevMerge = await MarketplaceSDK.DevInspectTransactionBlock(_walletId, gaslessTxMerge);
-                string responseMerge = await MarketplaceSDK.ExecuteGaslessTransactionBlock(_nickname, sessionToken, gaslessTxMerge, rootDevMerge.Effects.GasUsed.ComputationCost + rootDevMerge.Effects.GasUsed.StorageCost);
-                Debug.Log(responseMerge);
-                await Task.Delay(3000);
-
-                coinRoot = await MarketplaceSDK.GetOwnedObjectCoins(_walletId);
-            }
-            KioskRootOwned kioskRoot = await MarketplaceSDK.GetOwnedObjectKiosk(_walletId);
-            string gaslessTx = await MarketplaceSDK.BuildBuyTransaction(token, nftId, FindHighestNumber(coinRoot.Result.Data), kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
-            ResultDev rootDev = await MarketplaceSDK.DevInspectTransactionBlock(_walletId, gaslessTx);
-            string response = await MarketplaceSDK.ExecuteGaslessTransactionBlock(_nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
-            Debug.Log(response);
-
-            AuthorizationAPI(_nickname, _secretKey);
-        }
-
-        public async void UnlistAsset(string nftId)
-        {
-            _UIContext.ActivityIndicatorItem.Open();
-            string sessionToken = await MarketplaceSDK.OnCreateSession(_secretKey);
-            string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
-            string signature = await MarketplaceSDK.SignPersonalMessage(_nickname, timestamp, sessionToken);
-            string token = await MarketplaceSDK.LoginToKeepsake(signature, timestamp);
-            string gaslessTx = await MarketplaceSDK.UnlistAsset(nftId, token);
-            ResultDev rootDev = await MarketplaceSDK.DevInspectTransactionBlock(_walletId, gaslessTx);
-            string response = await MarketplaceSDK.ExecuteGaslessTransactionBlock(_nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
-            Debug.Log(response);
-
-            AuthorizationAPI(_nickname, _secretKey);
-        }
-
-        public async void SellNFT(string nftId, double amount)
-        {
-            _UIContext.ActivityIndicatorItem.Open();
-            string sessionToken = await MarketplaceSDK.OnCreateSession(_secretKey);
-            string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
-            string signature = await MarketplaceSDK.SignPersonalMessage(_nickname, timestamp, sessionToken);
-            string token = await MarketplaceSDK.LoginToKeepsake(signature, timestamp);
-            KioskRootOwned kioskRoot = await MarketplaceSDK.GetOwnedObjectKiosk(_walletId);
-            string gaslessTx = await MarketplaceSDK.BuildSellTransaction(token, nftId, (amount * 1000000000).ToString(), kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
-            ResultDev rootDev = await MarketplaceSDK.DevInspectTransactionBlock(_walletId, gaslessTx);
-            string response = await MarketplaceSDK.ExecuteGaslessTransactionBlock(_nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
-            Debug.Log(response);
-
-            AuthorizationAPI(_nickname, _secretKey);
-        }
-
-        public async void SignUpAccount(string nickname, string secretKey)
-        {
-            _UIContext.ActivityIndicatorItem.Open();
-
-            string sessionToken = await MarketplaceSDK.OnCreateSession(secretKey);
-            string walletId = await MarketplaceSDK.OnCreateWallet(sessionToken, nickname);
-            if (walletId == null)
-            {
-                _UIContext.OpenLoginWindow(AuthorizationAPI, SignUpAccount, "Wallet ID already exist!");
-                _UIContext.ActivityIndicatorItem.Close();
-                return;
-            }
-
-            _nickname = nickname;
-            _secretKey = secretKey;
-
-            AuthorizationAPI(_nickname, _secretKey);
-        }
-
-        public async void AuthorizationAPI(string nickname, string secretKey)
-        {
-            _UIContext.ActivityIndicatorItem.Open();
-
-            string walletId = await MarketplaceSDK.GetWallet(nickname);
-            if (walletId == null)
-            {
-                _UIContext.OpenLoginWindow(AuthorizationAPI, SignUpAccount, "Wallet ID not found!");
-                _UIContext.ActivityIndicatorItem.Close();
-                return;
-            }
-            string sessionToken = await MarketplaceSDK.OnCreateSession(secretKey);
-            string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
-            string signature = await MarketplaceSDK.SignPersonalMessage(nickname, timestamp, sessionToken);
-            if(signature == null)
-            {
-                _UIContext.OpenLoginWindow(AuthorizationAPI, SignUpAccount, "Wrong secret key!");
-                _UIContext.ActivityIndicatorItem.Close();
-                return;
-            }
-
-            RootBalance coinRoot = await MarketplaceSDK.GetWalletBalance(walletId);
-            double balance = coinRoot.Result.TotalBalance / 1000000000;
-
-            _nickname = nickname;
-            _walletId = walletId;
-            _secretKey = secretKey;
-
-            _UIContext.ActivityIndicatorItem.Close();
-            _UIContext.OpenMainMenu(nickname, walletId, balance.ToString());
-        }
-
-        public async Task UpdateWindows()
-        {
-            _UIContext.ActivityIndicatorItem.Open();
-
-            Root root = await MarketplaceSDK.OnSearchListing(1, "6462c8af23a2b24070683fd1", "Whacky Cube Smash");
-
-            KioskRootOwned kioskRoot = await MarketplaceSDK.GetOwnedObjectKiosk(_walletId);
-            RootDynamic rootDynamic = await MarketplaceSDK.GetDynamicField(kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
-            RootObjectType rootObjectType = await MarketplaceSDK.GetObjectType("6462c8af23a2b24070683fd1");
-            List<string> objects = new();
-
-            foreach (DataDynamic answer in rootDynamic.Result.Data)
-            {
-                if (answer.ObjectType == rootObjectType.Collection.FullType)
-                {
-                    objects.Add(answer.ObjectId);
-                }
-            }
-
-            RootMulti rootNft = await MarketplaceSDK.GetMultiObjects(objects.ToArray());
-
-            string sessionToken = await MarketplaceSDK.OnCreateSession(_secretKey);
-            string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
-            string signature = await MarketplaceSDK.SignPersonalMessage(_nickname, timestamp, sessionToken);
-            string token = await MarketplaceSDK.LoginToKeepsake(signature, timestamp);
-            Root rootMyListing = await MarketplaceSDK.GetMyListing(token);
-
-            _UIContext.OpenMyNFT(InitGame, SellNFT, UnlistAsset, rootNft.Result, rootMyListing.Results, kioskRoot.Result.Data[0].Data.Display.Data.Kiosk, false);
-            _UIContext.OpenMarket(BuyNFT, UnlistAsset, root.Results, kioskRoot.Result.Data[0].Data.Display.Data.Kiosk, false);
-
-            _UIContext.ActivityIndicatorItem.Close();
+            _UIContext.OpenLoginWindow();
         }
 
         public void TunningPersonAction(Result result)
@@ -345,29 +197,6 @@ namespace MarketplaceSDK.Example.Game
                     _cellCritters[i, j] = new CritterCell(i, j);
                 }
             }
-        }
-
-        public string FindHighestNumber(List<CoinDataOwned> coins)
-        {
-            if (coins == null || coins.Count == 0)
-            {
-                throw new ArgumentException("The array is null or empty.");
-            }
-            double highestNumber = double.Parse(coins[0].Data.Content.fields.Balance, CultureInfo.InvariantCulture.NumberFormat);
-            string result = coins[0].Data.ObjectId;
-
-            for (int i = 1; i < coins.Count; i++)
-            {
-                double currentNumber = double.Parse(coins[i].Data.Content.fields.Balance, CultureInfo.InvariantCulture.NumberFormat);
-
-                if (currentNumber > highestNumber)
-                {
-                    highestNumber = currentNumber;
-                    result = coins[i].Data.ObjectId;
-                }
-            }
-
-            return result;
         }
 
         private void TouchTheCritter(Collider collider)

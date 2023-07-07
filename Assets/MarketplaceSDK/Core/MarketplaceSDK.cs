@@ -1,11 +1,12 @@
-using MarketplaceSDK.Https;
-using MarketplaceSDK.Models;
+using MarketplaceSDK.Core.Tools;
+using MarketplaceSDK.Core.Enums;
+using MarketplaceSDK.Core.Https;
+using MarketplaceSDK.Core.Models;
 using Newtonsoft.Json;
 using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using UnityEngine;
 
 namespace MarketplaceSDK
 {
@@ -13,6 +14,11 @@ namespace MarketplaceSDK
     {
         private static HttpClient httpClient = new();
 
+        /// <summary>
+        /// For security purposes, you must generate a session token before you create a wallet, sign transactions, or execute transactions. Session tokens expire after 10 minutes.
+        /// </summary>
+        /// <param name="secretKey">Used to encrypt a user's wallet private key. Typically, this would tie to your app's registration and authentication.</param>
+        /// <returns>Session token - Used to create a wallet, sign transactions or execute transactions.</returns>
         [Http("https://api.shinami.com/key/v1/")]
         public static async Task<string> OnCreateSession(string secretKey)
         {
@@ -25,32 +31,50 @@ namespace MarketplaceSDK
             return session.Result;
         }
 
+        /// <summary>
+        /// Programmatically generates a unique wallet for a user that is Sui network agnostic.
+        /// </summary>
+        /// <param name="walletId">An arbitrary and unique ID for the wallet. Can be based on your internal user IDs.</param>
+        /// <param name="sessionToken">The session token that we generated. Session tokens expire after 10 minutes.</param>
+        /// <returns>Wallet address - Sui wallet address created for the user.</returns>
         [Http("https://api.shinami.com/wallet/v1")]
-        public static async Task<string> OnCreateWallet(string sessionToken, string user)
+        public static async Task<string> OnCreateWallet(string sessionToken, string walletId)
         {
             HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("OnCreateWallet");
 
-            string requestBody = $@"{{ ""jsonrpc"":""2.0"", ""method"":""shinami_wal_createWallet"", ""params"":[""{user}"", ""{sessionToken}""], ""id"":1 }}";
+            string requestBody = $@"{{ ""jsonrpc"":""2.0"", ""method"":""shinami_wal_createWallet"", ""params"":[""{walletId}"", ""{sessionToken}""], ""id"":1 }}";
             string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, "X-API-Key", "sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6");
 
             Session session = JsonConvert.DeserializeObject<Session>(response);
             return session.Result;
         }
 
+        /// <summary>
+        /// Retrieve a user's wallet address based on their ID.
+        /// </summary>
+        /// <param name="walletId">An arbitrary and unique ID for the wallet. Can be based on your internal user IDs.</param>
+        /// <returns>Wallet address - Sui wallet address created for the user.</returns>
         [Http("https://api.shinami.com/wallet/v1")]
-        public static async Task<string> GetWallet(string user)
+        public static async Task<string> GetWallet(string walletId)
         {
             HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("GetWallet");
 
-            string requestBody = $@"{{ ""jsonrpc"":""2.0"", ""method"":""shinami_wal_getWallet"", ""params"":[""{user}""], ""id"":1 }}";
+            string requestBody = $@"{{ ""jsonrpc"":""2.0"", ""method"":""shinami_wal_getWallet"", ""params"":[""{walletId}""], ""id"":1 }}";
             string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, "X-API-Key", "sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6");
 
             Session session = JsonConvert.DeserializeObject<Session>(response);
             return session.Result;
         }
 
+        /// <summary>
+        /// Signs a fully constructed transaction block. This is a low level API - it requires integration with Gas Station API and Sui API for transaction sponsorship (if needed) and execution. This method gives you more control over how you submit transactions to Sui.
+        /// </summary>
+        /// <param name="walletId">An arbitrary and unique ID for the wallet. Can be based on your internal user IDs.</param>
+        /// <param name="timestamp">Arbitrary message bytes, as Base64 encoded string.</param>
+        /// <param name="sessionToken">The session token that we generated. Session tokens expire after 10 minutes.</param>
+        /// <returns>Signature - Base64 encoded signature, signed by the wallet key</returns>
         [Http("https://api.shinami.com/wallet/v1")]
-        public static async Task<string> SignPersonalMessage(string nickname, string timestamp, string sessionToken)
+        public static async Task<string> SignPersonalMessage(string walletId, string timestamp, string sessionToken)
         {
             HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("SignPersonalMessage");
 
@@ -63,7 +87,7 @@ namespace MarketplaceSDK
                 ""jsonrpc"": ""2.0"",
                 ""method"": ""shinami_wal_signPersonalMessage"",
                 ""params"": [
-                    ""{nickname}"",
+                    ""{walletId}"",
                     ""{sessionToken}"",
                     ""{base64Message}""
                 ],
@@ -73,11 +97,15 @@ namespace MarketplaceSDK
             string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, "X-API-Key", "sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6");
             Session session = JsonConvert.DeserializeObject<Session>(response);
 
-            if(session.Result == null) { return null; }
+            if (session.Result == null) { return null; }
 
             return session.Result;
         }
 
+        /// <summary>
+        /// Return the list of objects owned by an address.
+        /// </summary>
+        /// <param name="walletId">The wallet address.</param>
         [Http("https://api.shinami.com/node/v1/sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6")]
         public static async Task<string> GetOwnedObjects(string walletId)
         {
@@ -108,6 +136,10 @@ namespace MarketplaceSDK
             return response;
         }
 
+        /// <summary>
+        /// Return a list of Coin objects by type owned by an address.
+        /// </summary>
+        /// <param name="walletId">The wallet address.</param>
         [Http("https://api.shinami.com/node/v1/sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6")]
         public static async Task<CoinRootOwned> GetOwnedObjectCoins(string walletId)
         {
@@ -123,6 +155,10 @@ namespace MarketplaceSDK
             return session;
         }
 
+        /// <summary>
+        /// Return the total Coin balance for each coin type owned by an address.
+        /// </summary>
+        /// <param name="walletId">The wallet address.</param>
         [Http("https://api.shinami.com/node/v1/sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6")]
         public static async Task<RootBalance> GetWalletBalance(string walletId)
         {
@@ -144,6 +180,10 @@ namespace MarketplaceSDK
             return session;
         }
 
+        /// <summary>
+        /// Return a list of Kiosk objects by type owned by an address.
+        /// </summary>
+        /// <param name="walletId">The wallet address.</param>
         [Http("https://api.shinami.com/node/v1/sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6")]
         public static async Task<KioskRootOwned> GetOwnedObjectKiosk(string walletId)
         {
@@ -176,15 +216,20 @@ namespace MarketplaceSDK
             return session;
         }
 
+        /// <summary>
+        /// Runs the transaction in dev-inspect mode, which allows for nearly any transaction (or Move call) with any arguments. Detailed results are provided, including both the transaction effects and any return values.
+        /// </summary>
+        /// <param name="walletId">The wallet address.</param>
+        /// <param name="tx_bytes">Transaction data bytes, as base-64 encoded string.</param>
         [Http("https://api.shinami.com/node/v1/sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6")]
-        public static async Task<ResultDev> DevInspectTransactionBlock(string walletId, string gaslessTx)
+        public static async Task<ResultDev> DevInspectTransactionBlock(string walletId, string tx_bytes)
         {
             HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("DevInspectTransactionBlock");
 
             string requestBody = $@"{{ ""jsonrpc"":""2.0"", 
               ""method"":""sui_devInspectTransactionBlock"",
               ""params"":[""{walletId}"",
-                        ""{gaslessTx}""],
+                        ""{tx_bytes}""],
             
               ""id"":1}}";
 
@@ -194,8 +239,15 @@ namespace MarketplaceSDK
             return session.Result;
         }
 
+        /// <summary>
+        /// Execute a transaction using the transaction data and signature(s).
+        /// </summary>
+        /// <param name="nickname">The caller's Sui address.</param>
+        /// <param name="sessionToken">The session token that we generated. Session tokens expire after 10 minutes.</param>
+        /// <param name="tx_bytes">BCS serialized transaction data bytes without its type tag, as base-64 encoded string.</param>
+        /// <param name="cost">Price.</param>
         [Http("https://api.shinami.com/wallet/v1")]
-        public static async Task<string> ExecuteGaslessTransactionBlock(string nickname, string sessionId, string gaslessTx, long cost)
+        public static async Task<string> ExecuteGaslessTransactionBlock(string nickname, string sessionToken, string tx_bytes, long cost)
         {
             HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("ExecuteGaslessTransactionBlock");
 
@@ -204,8 +256,8 @@ namespace MarketplaceSDK
                 ""method"": ""shinami_wal_executeGaslessTransactionBlock"",
                 ""params"": [
                     ""{nickname}"",
-                    ""{sessionId}"",
-                    ""{gaslessTx}"",
+                    ""{sessionToken}"",
+                    ""{tx_bytes}"",
                     {cost},
                     {{
                         ""showRawInput"": false,
@@ -226,6 +278,10 @@ namespace MarketplaceSDK
             return response;
         }
 
+        /// <summary>
+        /// Return the dynamic field object information for a specified object.
+        /// </summary>
+        /// <param name="kiosk">The kiosk address.</param>
         [Http("https://api.shinami.com/node/v1/sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6")]
         public static async Task<RootDynamic> GetDynamicField(string kiosk)
         {
@@ -246,6 +302,10 @@ namespace MarketplaceSDK
             return session;
         }
 
+        /// <summary>
+        /// Return the object data for a list of objects.
+        /// </summary>
+        /// <param name="multiObjects">The IDs of the queried objects.</param>
         [Http("https://api.shinami.com/node/v1/sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6")]
         public static async Task<RootMulti> GetMultiObjects(string[] multiObjects)
         {
@@ -270,6 +330,12 @@ namespace MarketplaceSDK
             return root;
         }
 
+        /// <summary>
+        /// Return a list of NFT objects.
+        /// </summary>
+        /// <param name="salePrice">Price per NFT.</param>
+        /// <param name="nftCollection">Address NFT Collection.</param>
+        /// <param name="searchName">Name NFT Collection.</param>
         [Http("https://beta-api.keepsake.gg/web/v1/listings/search")]
         public static async Task<Root> OnSearchListing(int salePrice, string nftCollection, string searchName)
         {
@@ -290,6 +356,12 @@ namespace MarketplaceSDK
             return root;
         }
 
+        /// <summary>
+        /// Login to Keepsake.
+        /// </summary>
+        /// <param name="signature">Signature is committed to the intent message of the transaction data.</param>
+        /// <param name="timestamp">Unix time milliseconds.</param>
+        /// <returns>Token that can be used for transaction.</returns>
         [Http("https://beta-api.keepsake.gg/web/v1/users/sign_up")]
         public static async Task<string> LoginToKeepsake(string signature, string timestamp)
         {
@@ -306,8 +378,15 @@ namespace MarketplaceSDK
             return session.token;
         }
 
+        /// <summary>
+        /// Build transaction to buy NFT.
+        /// </summary>
+        /// <param name="token">The token that was received upon successful login in Keepsake.</param>
+        /// <param name="nftId">NFT id.</param>
+        /// <param name="coin">Coin address.</param>
+        /// <param name="kiosk">Kiosk address.</param>
         [Http("https://beta-api.keepsake.gg/web/v1/listings/buy/")]
-        public static async Task<string> BuildBuyTransaction(string token, string objectId, string coin, string kiosk)
+        public static async Task<string> BuildBuyTransaction(string token, string nftId, string coin, string kiosk)
         {
             HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("BuildBuyTransaction");
 
@@ -316,12 +395,18 @@ namespace MarketplaceSDK
                 ""buyer_kiosk"": ""{kiosk}""
             }}";
 
-            string response = await httpClient.PostRequestWithAuthorization(attribute.Url + objectId, requestBody, "Authorization", $"Bearer {token}");
+            string response = await httpClient.PostRequestWithAuthorization(attribute.Url + nftId, requestBody, "Authorization", $"Bearer {token}");
             Gasless session = JsonConvert.DeserializeObject<Gasless>(response);
 
             return session.GaslessTx;
         }
-
+        /// <summary>
+        /// Build transaction to sell NFT.
+        /// </summary>
+        /// <param name="token">The token that was received upon successful login in Keepsake.</param>
+        /// <param name="nftId">NFT id.</param>
+        /// <param name="suiPrice">Price NFT.</param>
+        /// <param name="kiosk">Kiosk address.</param>
         [Http("https://beta-api.keepsake.gg/web/v1/listings/sell")]
         public static async Task<string> BuildSellTransaction(string token, string nftId, string suiPrice, string kiosk)
         {
@@ -339,6 +424,11 @@ namespace MarketplaceSDK
             return session.GaslessTx;
         }
 
+        /// <summary>
+        /// Merge coins.
+        /// </summary>
+        /// <param name="token">The token that was received upon successful login in Keepsake.</param>
+        /// <param name="multiCoin">Array of coins.</param>
         [Http("https://beta-api.keepsake.gg/web/v1/listings/mergeCoins")]
         public static async Task<string> MergeCoins(string token, CoinDataOwned[] multiCoin)
         {
@@ -354,6 +444,10 @@ namespace MarketplaceSDK
             return session.GaslessTx;
         }
 
+        /// <summary>
+        /// Get my listing NFT.
+        /// </summary>
+        /// <param name="token">The token that was received upon successful login in Keepsake.</param>
         [Http("https://beta-api.keepsake.gg/web/v1/listings/my")]
         public static async Task<Root> GetMyListing(string token)
         {
@@ -367,19 +461,28 @@ namespace MarketplaceSDK
             return root;
         }
 
+        /// <summary>
+        /// Unlist asset from sales.
+        /// </summary>
+        /// <param name="nftId">NFT id.</param>
+        /// <param name="token">The token that was received upon successful login in Keepsake.</param>
         [Http("https://beta-api.keepsake.gg/web/v1/listings/unlist/")]
-        public static async Task<string> UnlistAsset(string objectId, string token)
+        public static async Task<string> UnlistAsset(string nftId, string token)
         {
             HttpAttribute attribute = HttpAttribute.GetAttributeCustom<MarketplaceSDK>("UnlistAsset");
 
             string requestBody = "";
 
-            string response = await httpClient.GetRequestWithAuthorization(attribute.Url + objectId, requestBody, "Authorization", $"Bearer {token}");
+            string response = await httpClient.GetRequestWithAuthorization(attribute.Url + nftId, requestBody, "Authorization", $"Bearer {token}");
             Gasless session = JsonConvert.DeserializeObject<Gasless>(response);
 
             return session.GaslessTx;
         }
 
+        /// <summary>
+        /// Get object type for comparison
+        /// </summary>
+        /// <param name="collectionId">Collection NFT ID.</param>
         [Http("https://beta-api.keepsake.gg/web/v1/collections/id/")]
         public static async Task<RootObjectType> GetObjectType(string collectionId)
         {
@@ -393,6 +496,10 @@ namespace MarketplaceSDK
             return root;
         }
 
+        /// <summary>
+        /// Create a new kiosk.
+        /// </summary>
+        /// <param name="token">The token that was received upon successful login in Keepsake.</param>
         [Http("https://beta-api.keepsake.gg/web/v1/listings/make_ob_kiosk")]
         public static async Task<string> MakeObKiosk(string token)
         {
@@ -404,6 +511,122 @@ namespace MarketplaceSDK
             Gasless session = JsonConvert.DeserializeObject<Gasless>(response);
 
             return session.GaslessTx;
+        }
+
+        /// <summary>
+        /// Authorization.
+        /// </summary>
+        /// <param name="nickname">User nickname.</param>
+        /// <param name="secretKey">Used to encrypt a user's wallet private key. Typically, this would tie to your app's registration and authentication.</param>
+        public static async Task<StatusAuthorization> AuthorizationAPI(string nickname, string secretKey)
+        {
+            string walletId = await GetWallet(nickname);
+            if (walletId == null)
+            {
+                return StatusAuthorization.WalletNotFound;
+            }
+            string sessionToken = await OnCreateSession(secretKey);
+            string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+            string signature = await SignPersonalMessage(nickname, timestamp, sessionToken);
+            if (signature == null)
+            {
+                return StatusAuthorization.WrongSecretKey;
+            }
+
+            return StatusAuthorization.Success;
+        }
+
+        /// <summary>
+        /// Sign up account.
+        /// </summary>
+        /// <param name="nickname">User nickname.</param>
+        /// <param name="secretKey">Used to encrypt a user's wallet private key. Typically, this would tie to your app's registration and authentication.</param>
+        public static async Task<StatusRegistration> SignUpAccount(string nickname, string secretKey)
+        {
+            if (nickname.Length < 1) return StatusRegistration.NicknameEmpty;
+
+            string sessionToken = await OnCreateSession(secretKey);
+            string walletId = await OnCreateWallet(sessionToken, nickname);
+            if (walletId == null)
+            {
+                return StatusRegistration.WalletExist;
+            }
+
+            return StatusRegistration.Success;
+        }
+
+        /// <summary>
+        /// Buy NFT.
+        /// </summary>
+        /// <param name="nftId">NFT id.</param>
+        /// <param name="nickname">User nickname.</param>
+        /// <param name="secretKey">Used to encrypt a user's wallet private key. Typically, this would tie to your app's registration and authentication.</param>
+        /// <param name="walletId">The wallet address.</param>
+        public static async Task<string> BuyNFT(string nftId, string nickname, string secretKey, string walletId)
+        {
+            string sessionToken = await OnCreateSession(secretKey);
+            string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+            string signature = await SignPersonalMessage(nickname, timestamp, sessionToken);
+            string token = await LoginToKeepsake(signature, timestamp);
+            CoinRootOwned coinRoot = await GetOwnedObjectCoins(walletId);
+            if (coinRoot.Result.Data.Count > 1)
+            {
+                string gaslessTxMerge = await MergeCoins(token, coinRoot.Result.Data.ToArray());
+                ResultDev rootDevMerge = await DevInspectTransactionBlock(walletId, gaslessTxMerge);
+                string responseMerge = await ExecuteGaslessTransactionBlock(nickname, sessionToken, gaslessTxMerge, rootDevMerge.Effects.GasUsed.ComputationCost + rootDevMerge.Effects.GasUsed.StorageCost);
+
+                await Task.Delay(3000);
+
+                coinRoot = await GetOwnedObjectCoins(walletId);
+            }
+            KioskRootOwned kioskRoot = await GetOwnedObjectKiosk(walletId);
+            string gaslessTx = await BuildBuyTransaction(token, nftId, ToolExtensions.FindHighestNumber(coinRoot.Result.Data), kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
+            ResultDev rootDev = await DevInspectTransactionBlock(walletId, gaslessTx);
+            string response = await ExecuteGaslessTransactionBlock(nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
+
+            return response;
+        }
+
+        /// <summary>
+        /// Unlist NFT.
+        /// </summary>
+        /// <param name="nftId">NFT id.</param>
+        /// <param name="nickname">User nickname.</param>
+        /// <param name="secretKey">Used to encrypt a user's wallet private key. Typically, this would tie to your app's registration and authentication.</param>
+        /// <param name="walletId">The wallet address.</param>
+        public static async Task<string> UnlistAsset(string nftId, string nickname, string secretKey, string walletId)
+        {
+            string sessionToken = await OnCreateSession(secretKey);
+            string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+            string signature = await SignPersonalMessage(nickname, timestamp, sessionToken);
+            string token = await LoginToKeepsake(signature, timestamp);
+            string gaslessTx = await UnlistAsset(nftId, token);
+            ResultDev rootDev = await DevInspectTransactionBlock(walletId, gaslessTx);
+            string response = await ExecuteGaslessTransactionBlock(nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
+
+            return response;
+        }
+
+        /// <summary>
+        /// Sell NFT.
+        /// </summary>
+        /// <param name="nftId">NFT id.</param>
+        /// <param name="amount">NFT price.</param>
+        /// <param name="nickname">User nickname.</param>
+        /// <param name="secretKey">Used to encrypt a user's wallet private key. Typically, this would tie to your app's registration and authentication.</param>
+        /// <param name="walletId">The wallet address.</param>
+        public static async Task<string> SellNFT(string nftId, double amount, string nickname, string secretKey, string walletId)
+        {
+            string sessionToken = await OnCreateSession(secretKey);
+            string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+            string signature = await SignPersonalMessage(nickname, timestamp, sessionToken);
+            string token = await LoginToKeepsake(signature, timestamp);
+            KioskRootOwned kioskRoot = await GetOwnedObjectKiosk(walletId);
+            string gaslessTx = await BuildSellTransaction(token, nftId, (amount * 1000000000).ToString(), kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
+            ResultDev rootDev = await DevInspectTransactionBlock(walletId, gaslessTx);
+            string response = await ExecuteGaslessTransactionBlock(nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
+
+            return response;
         }
     }
 }

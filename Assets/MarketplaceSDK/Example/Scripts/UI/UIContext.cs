@@ -1,9 +1,11 @@
+using MarketplaceSDK.Core.Enums;
 using MarketplaceSDK.Example.Game.Creator;
 using MarketplaceSDK.Example.Game.Enum;
-using MarketplaceSDK.Models;
+using MarketplaceSDK.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace MarketplaceSDK.Example.Game.UI
@@ -23,23 +25,25 @@ namespace MarketplaceSDK.Example.Game.UI
         [SerializeField] private MarketMenuItem _marketMenuItem;
         [SerializeField] private MyNFTMenuItem _myNftMenuItem;
 
+        private string _nickname = "";
+        private string _walletId = "";
+        private string _secretKey = "";
 
         // need to delete
         [SerializeField] private GameObject prefabCubix;
-
         [SerializeField] private GameContext _gameContext;
 
         private void Awake()
         {
             _mainMenuItem.MarketBtn.onClick.AddListener(async delegate {
-                await _gameContext.UpdateWindows();
+                await UpdateWindows();
 
                 _mainMenuWindow.SetActive(false);
                 _marketMenuItem.gameObject.SetActive(true);
             });
 
             _mainMenuItem.MyNftBtn.onClick.AddListener(async delegate {
-                await _gameContext.UpdateWindows();
+                await UpdateWindows();
 
                 _mainMenuWindow.SetActive(false);
                 _myNftMenuItem.gameObject.SetActive(true);
@@ -66,7 +70,45 @@ namespace MarketplaceSDK.Example.Game.UI
             });
         }
 
-        public void OpenMarket(Action<string> action, Action<string> unlistAction, List<Result> results, string kiosk, bool open = true)
+        public void InitializeUser(string nickname, string walletId, string secretKey)
+        {
+            _nickname = nickname;
+            _walletId = walletId;
+            _secretKey = secretKey;
+        }
+
+        public async Task UpdateWindows()
+        {
+            ActivityIndicatorItem.Open();
+
+            Root root = await MarketplaceSDK.OnSearchListing(1, "6462c8af23a2b24070683fd1", "Whacky Cube Smash");
+
+            KioskRootOwned kioskRoot = await MarketplaceSDK.GetOwnedObjectKiosk(_walletId);
+            RootDynamic rootDynamic = await MarketplaceSDK.GetDynamicField(kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
+            RootObjectType rootObjectType = await MarketplaceSDK.GetObjectType("6462c8af23a2b24070683fd1");
+            List<string> objects = new();
+
+            foreach (DataDynamic answer in rootDynamic.Result.Data)
+            {
+                if (answer.ObjectType == rootObjectType.Collection.FullType)
+                {
+                    objects.Add(answer.ObjectId);
+                }
+            }
+            RootMulti rootNft = await MarketplaceSDK.GetMultiObjects(objects.ToArray());
+            string sessionToken = await MarketplaceSDK.OnCreateSession(_secretKey);
+            string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+            string signature = await MarketplaceSDK.SignPersonalMessage(_nickname, timestamp, sessionToken);
+            string token = await MarketplaceSDK.LoginToKeepsake(signature, timestamp);
+            Root rootMyListing = await MarketplaceSDK.GetMyListing(token);
+
+            OpenMyNFT(rootNft.Result, rootMyListing.Results, kioskRoot.Result.Data[0].Data.Display.Data.Kiosk, false);
+            OpenMarket(root.Results, kioskRoot.Result.Data[0].Data.Display.Data.Kiosk, false);
+
+            ActivityIndicatorItem.Close();
+        }
+
+        public void OpenMarket(List<Result> results, string kiosk, bool open = true)
         {
             _marketMenuItem.gameObject.SetActive(open);
 
@@ -103,16 +145,26 @@ namespace MarketplaceSDK.Example.Game.UI
                 if (kiosk == results[i].SellerKiosk) 
                 {
                     cardInfo.BuyBtnText.text = "Unlist";
-                    cardInfo.BuyBtn.onClick.AddListener(delegate {
-                        unlistAction?.Invoke(results[cardInfo.index].Id);
+                    cardInfo.BuyBtn.onClick.AddListener(async delegate {
+                        ActivityIndicatorItem.Open();
+
+                        await MarketplaceSDK.UnlistAsset(results[cardInfo.index].Id, _nickname, _secretKey, _walletId);
+                        await OpenMainMenu(_nickname, _walletId);
+
+                        ActivityIndicatorItem.Close();
                         _marketMenuItem.gameObject.SetActive(false);
                     });
                 }
                 else
                 {
                     cardInfo.BuyBtnText.text = "Buy";
-                    cardInfo.BuyBtn.onClick.AddListener(delegate {
-                        action?.Invoke(results[cardInfo.index].Id);
+                    cardInfo.BuyBtn.onClick.AddListener(async delegate {
+                        ActivityIndicatorItem.Open();
+
+                        await MarketplaceSDK.BuyNFT(results[cardInfo.index].Id, _nickname, _secretKey, _walletId);
+                        await OpenMainMenu(_nickname, _walletId);
+
+                        ActivityIndicatorItem.Close();
                         _marketMenuItem.gameObject.SetActive(false);
                     });
                 }
@@ -124,7 +176,7 @@ namespace MarketplaceSDK.Example.Game.UI
             _infoWindow.SetActive(true);
         }
 
-        public void OpenMyNFT(Action<Result> actionGame, Action<string, double> sellNft, Action<string> unlistAction, List<ResultMulti> results, List<Result> resultListing, string kiosk, bool open = true)
+        public void OpenMyNFT(List<ResultMulti> results, List<Result> resultListing, string kiosk, bool open = true)
         {
             _myNftMenuItem.gameObject.SetActive(open);
 
@@ -177,7 +229,7 @@ namespace MarketplaceSDK.Example.Game.UI
                 }
 
                 cardInfo.BuyBtn.onClick.AddListener(delegate {
-                    actionGame?.Invoke(new Result(size, speed, edgeColor, sideColor));
+                    _gameContext.InitGame(new Result(size, speed, edgeColor, sideColor));
                     _myNftMenuItem.gameObject.SetActive(false);
                 });
 
@@ -188,9 +240,14 @@ namespace MarketplaceSDK.Example.Game.UI
                         cardInfo.SellingTooltip.SetActive(true);
                     });
 
-                    cardInfo.ConfirmBtn.onClick.AddListener(delegate
+                    cardInfo.ConfirmBtn.onClick.AddListener(async delegate
                     {
-                        sellNft?.Invoke(cardInfo.Id, double.Parse(cardInfo.sellInputField.text, CultureInfo.InvariantCulture.NumberFormat));
+                        ActivityIndicatorItem.Open();
+
+                        await MarketplaceSDK.SellNFT(cardInfo.Id, double.Parse(cardInfo.sellInputField.text, CultureInfo.InvariantCulture.NumberFormat), _nickname, _secretKey, _walletId);
+                        await OpenMainMenu(_nickname, _walletId);
+
+                        ActivityIndicatorItem.Close();
                         _myNftMenuItem.gameObject.SetActive(false);
                     });
                     cardInfo.CancelBtn.onClick.AddListener(delegate
@@ -203,9 +260,14 @@ namespace MarketplaceSDK.Example.Game.UI
                 {
                     cardInfo.SellBtnText.text = "Unlist";
 
-                    cardInfo.SellBtn.onClick.AddListener(delegate
+                    cardInfo.SellBtn.onClick.AddListener(async delegate
                     {
-                        unlistAction?.Invoke(listingId);
+                        ActivityIndicatorItem.Open();
+
+                        await MarketplaceSDK.UnlistAsset(listingId, _nickname, _secretKey, _walletId);
+                        await OpenMainMenu(_nickname, _walletId);
+
+                        ActivityIndicatorItem.Close();
                         _myNftMenuItem.gameObject.SetActive(false);
                     });
                 }
@@ -214,30 +276,95 @@ namespace MarketplaceSDK.Example.Game.UI
             }
         }
 
-        public void OpenMainMenu(string nickname, string walletId, string balance)
+        public async Task OpenMainMenu(string nickname, string walletId)
         {
+            RootBalance coinRoot = await MarketplaceSDK.GetWalletBalance(walletId);
+            double balance = coinRoot.Result.TotalBalance / 1000000000;
+
             _mainMenuWindow.SetActive(true);
             _mainMenuItem.NicknameText.text = nickname;
             _mainMenuItem.WalletIdText.text = walletId;
-            _mainMenuItem.BalanceText.text = balance + " SUI";
+            _mainMenuItem.BalanceText.text = balance.ToString() + " SUI";
         }
 
-        public void OpenLoginWindow(Action<string, string> actionLogin, Action<string, string> actionRegistr, string errorMessage = "")
+        public void OpenLoginWindow(string errorMessage = "")
         {
             _loginWindow.SetActive(true);
 
             _loginItem.ErrorText.gameObject.SetActive(errorMessage.Length > 0);
             _loginItem.ErrorText.text = errorMessage;
 
-            _loginItem.LoginBtn.onClick.AddListener(delegate {
-                actionLogin?.Invoke(_loginItem.NicknameField.text, _loginItem.SecretKeyField.text);
+            _loginItem.LoginBtn.onClick.AddListener(async delegate {
+                ActivityIndicatorItem.Open();
+
+                StatusAuthorization result = await MarketplaceSDK.AuthorizationAPI(_loginItem.NicknameField.text, _loginItem.SecretKeyField.text);
+                if(result == StatusAuthorization.Success)
+                {
+                    string walletId = await MarketplaceSDK.GetWallet(_loginItem.NicknameField.text);
+                    InitializeUser(_loginItem.NicknameField.text, walletId, _loginItem.SecretKeyField.text);
+
+                    await OpenMainMenu(_loginItem.NicknameField.text, walletId);
+                }
+                else
+                {
+                    OpenLoginWindow(ConvertToHumanReadable(result));
+                    ActivityIndicatorItem.Close();
+                    return;
+                }
                 _loginWindow.SetActive(false);
+                
+
+                ActivityIndicatorItem.Close();
             });
 
-            _loginItem.SignUpBtn.onClick.AddListener(delegate {
-                actionRegistr?.Invoke(_loginItem.NicknameField.text, _loginItem.SecretKeyField.text);
+            _loginItem.SignUpBtn.onClick.AddListener(async delegate {
+                ActivityIndicatorItem.Open();
+
+                StatusRegistration result = await MarketplaceSDK.SignUpAccount(_loginItem.NicknameField.text, _loginItem.SecretKeyField.text);
+                if (result == StatusRegistration.Success)
+                {
+                    string walletId = await MarketplaceSDK.GetWallet(_loginItem.NicknameField.text);
+                    InitializeUser(_loginItem.NicknameField.text, walletId, _loginItem.SecretKeyField.text);
+
+                    await OpenMainMenu(_loginItem.NicknameField.text, walletId);
+                }
+                else
+                {
+                    OpenLoginWindow(ConvertToHumanReadable(result));
+                    ActivityIndicatorItem.Close();
+                    return;
+                }
+
                 _loginWindow.SetActive(false);
+
+                ActivityIndicatorItem.Close();
             });
+        }
+
+        public string ConvertToHumanReadable(StatusAuthorization result)
+        {
+            switch (result)
+            {
+                case StatusAuthorization.WalletNotFound:
+                    return "Wallet ID not found!";
+                case StatusAuthorization.WrongSecretKey:
+                    return "Wrong secret key!";
+                default:
+                    return "";
+            }
+        }
+
+        public string ConvertToHumanReadable(StatusRegistration result)
+        {
+            switch (result)
+            {
+                case StatusRegistration.NicknameEmpty:
+                    return "Name field is empty!";
+                case StatusRegistration.WalletExist:
+                    return "Wallet ID already exist!";
+                default:
+                    return "";
+            }
         }
     }
 }

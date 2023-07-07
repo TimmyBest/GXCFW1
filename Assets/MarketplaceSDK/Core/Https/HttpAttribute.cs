@@ -1,7 +1,7 @@
 using System;
 using System.Linq;
 
-namespace MarketplaceSDK.Https
+namespace MarketplaceSDK.Core.Https
 {
     [AttributeUsage(AttributeTargets.Method)]
     public class HttpAttribute : Attribute
