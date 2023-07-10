@@ -320,7 +320,10 @@ namespace KeepsakeSDK.Example.Game.UI
                 }
                 else
                 {
-                    OpenLoginWindow(ConvertToHumanReadable(result));
+                    Debug.Log("Error: " + ConvertToHumanReadable(result));
+                    errorMessage = ConvertToHumanReadable(result);
+                    _loginItem.ErrorText.gameObject.SetActive(errorMessage.Length > 0);
+                    _loginItem.ErrorText.text = errorMessage;
                     ActivityIndicatorItem.Close();
                     return;
                 }
@@ -346,7 +349,10 @@ namespace KeepsakeSDK.Example.Game.UI
                 }
                 else
                 {
-                    OpenLoginWindow(ConvertToHumanReadable(result));
+                    Debug.Log("Error: " + ConvertToHumanReadable(result));
+                    errorMessage = ConvertToHumanReadable(result);
+                    _loginItem.ErrorText.gameObject.SetActive(errorMessage.Length > 0);
+                    _loginItem.ErrorText.text = errorMessage;
                     ActivityIndicatorItem.Close();
                     return;
                 }
