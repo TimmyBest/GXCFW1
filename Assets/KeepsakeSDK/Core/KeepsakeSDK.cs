@@ -46,7 +46,6 @@ namespace KeepsakeSDK
             string requestBody = $@"{{ ""jsonrpc"":""2.0"", ""method"":""shinami_wal_createWallet"", ""params"":[""{nickname}"", ""{sessionToken}""], ""id"":1 }}";
             string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, "X-API-Key", "sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6");
             Session session = JsonConvert.DeserializeObject<Session>(response);
-            await CreateKiosk(nickname, secretKey, session.Result);
 
             return session.Result;
         }
@@ -601,7 +600,7 @@ namespace KeepsakeSDK
         /// <param name="nickname">User nickname.</param>
         /// <param name="secretKey">Used to encrypt a user's wallet private key. Typically, this would tie to your app's registration and authentication.</param>
         /// <param name="walletId">The wallet address.</param>
-        public static async Task<string> UnlistAsset(string nftId, string nickname, string secretKey, string walletId)
+        public static async Task<string> UnlistAssetBuild(string nftId, string nickname, string secretKey, string walletId)
         {
             string sessionToken = await OnCreateSession(secretKey);
             string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();

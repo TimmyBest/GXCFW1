@@ -12,6 +12,8 @@ namespace KeepsakeSDK.Example.Game.UI
 {
     public class UIContext : MonoBehaviour
     {
+        public string _secretKey = "anewsecretkey";
+
         [SerializeField] private Transform _contentMarket;
         [SerializeField] private Transform _contentMyNFT;
         [SerializeField] private GameObject _cardInfo;
@@ -27,7 +29,6 @@ namespace KeepsakeSDK.Example.Game.UI
 
         private string _nickname = "";
         private string _walletId = "";
-        private string _secretKey = "";
 
         // need to delete
         [SerializeField] private GameObject prefabCubix;
@@ -68,13 +69,21 @@ namespace KeepsakeSDK.Example.Game.UI
                 _mainMenuWindow.SetActive(false);
                 _loginWindow.SetActive(true);
             });
+
+            _mainMenuItem.RefreshBtn.onClick.AddListener(async delegate
+            {
+                ActivityIndicatorItem.Open();
+
+                await OpenMainMenu(_nickname, _walletId);
+
+                ActivityIndicatorItem.Close();
+            });
         }
 
-        public void InitializeUser(string nickname, string walletId, string secretKey)
+        public void InitializeUser(string nickname, string walletId)
         {
             _nickname = nickname;
             _walletId = walletId;
-            _secretKey = secretKey;
         }
 
         public async Task UpdateWindows()
@@ -112,11 +121,12 @@ namespace KeepsakeSDK.Example.Game.UI
         {
             _marketMenuItem.gameObject.SetActive(open);
 
-            for (int i = _contentMarket.childCount - 1; i >= 0; i--)
+            for (int i = 0; i < _contentMarket.childCount; i++)
             {
                 Transform childTransform = _contentMarket.GetChild(i);
                 Destroy(childTransform.gameObject);
             }
+
             PersonCreator personCreator = new PersonCreator();
 
             for (int i = 0; i < results.Count; i++)
@@ -148,7 +158,7 @@ namespace KeepsakeSDK.Example.Game.UI
                     cardInfo.BuyBtn.onClick.AddListener(async delegate {
                         ActivityIndicatorItem.Open();
 
-                        await KeepsakeSDK.UnlistAsset(results[cardInfo.index].Id, _nickname, _secretKey, _walletId);
+                        await KeepsakeSDK.UnlistAssetBuild(results[cardInfo.index].Id, _nickname, _secretKey, _walletId);
                         await OpenMainMenu(_nickname, _walletId);
 
                         ActivityIndicatorItem.Close();
@@ -180,7 +190,7 @@ namespace KeepsakeSDK.Example.Game.UI
         {
             _myNftMenuItem.gameObject.SetActive(open);
 
-            for (int i = _contentMyNFT.childCount - 1; i >= 0; i--)
+            for (int i = 0; i < _contentMyNFT.childCount; i++)
             {
                 Transform childTransform = _contentMyNFT.GetChild(i);
                 Destroy(childTransform.gameObject);
@@ -264,7 +274,7 @@ namespace KeepsakeSDK.Example.Game.UI
                     {
                         ActivityIndicatorItem.Open();
 
-                        await KeepsakeSDK.UnlistAsset(listingId, _nickname, _secretKey, _walletId);
+                        await KeepsakeSDK.UnlistAssetBuild(listingId, _nickname, _secretKey, _walletId);
                         await OpenMainMenu(_nickname, _walletId);
 
                         ActivityIndicatorItem.Close();
@@ -297,11 +307,11 @@ namespace KeepsakeSDK.Example.Game.UI
             _loginItem.LoginBtn.onClick.AddListener(async delegate {
                 ActivityIndicatorItem.Open();
 
-                StatusAuth result = await KeepsakeSDK.AuthorizationAPI(_loginItem.NicknameField.text, _loginItem.SecretKeyField.text);
+                StatusAuth result = await KeepsakeSDK.AuthorizationAPI(_loginItem.NicknameField.text, _secretKey);
                 if(result == StatusAuth.Success)
                 {
                     string walletId = await KeepsakeSDK.GetWallet(_loginItem.NicknameField.text);
-                    InitializeUser(_loginItem.NicknameField.text, walletId, _loginItem.SecretKeyField.text);
+                    InitializeUser(_loginItem.NicknameField.text, walletId);
 
                     await OpenMainMenu(_loginItem.NicknameField.text, walletId);
                 }
@@ -320,11 +330,14 @@ namespace KeepsakeSDK.Example.Game.UI
             _loginItem.SignUpBtn.onClick.AddListener(async delegate {
                 ActivityIndicatorItem.Open();
 
-                StatusRegister result = await KeepsakeSDK.SignUpAccount(_loginItem.NicknameField.text, _loginItem.SecretKeyField.text);
+                StatusRegister result = await KeepsakeSDK.SignUpAccount(_loginItem.NicknameField.text, _secretKey);
                 if (result == StatusRegister.Success)
                 {
                     string walletId = await KeepsakeSDK.GetWallet(_loginItem.NicknameField.text);
-                    InitializeUser(_loginItem.NicknameField.text, walletId, _loginItem.SecretKeyField.text);
+
+                    await KeepsakeSDK.CreateKiosk(_loginItem.NicknameField.text, _secretKey, walletId);
+
+                    InitializeUser(_loginItem.NicknameField.text, walletId);
 
                     await OpenMainMenu(_loginItem.NicknameField.text, walletId);
                 }
