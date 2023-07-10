@@ -14,7 +14,7 @@ namespace KeepsakeSDK.Example.Game.UI
     public class UIContext : MonoBehaviour
     {
         public string _secretKey = "anewsecretkey";
-
+        [Space(25f)]
         [SerializeField] private Transform _contentMarket;
         [SerializeField] private Transform _contentMyNFT;
         [SerializeField] private GameObject _cardInfo;
