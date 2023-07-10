@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
 using UnityEngine;
+using Newtonsoft.Json;
 
 namespace KeepsakeSDK.Example.Game.UI
 {
@@ -90,13 +91,15 @@ namespace KeepsakeSDK.Example.Game.UI
         {
             ActivityIndicatorItem.Open();
 
-            Root root = await KeepsakeSDK.OnSearchListing(1, "6462c8af23a2b24070683fd1", "Whacky Cube Smash");
+            string response = await KeepsakeSDK.OnSearchListing(1, "6462c8af23a2b24070683fd1", "Whacky Cube Smash");
+            Root root = JsonConvert.DeserializeObject<Root>(response);
 
             KioskRootOwned kioskRoot = await KeepsakeSDK.GetOwnedObjectKiosk(_walletId);
             RootDynamic rootDynamic = await KeepsakeSDK.GetDynamicField(kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
             RootObjectType rootObjectType = await KeepsakeSDK.GetObjectType("6462c8af23a2b24070683fd1");
             List<string> objects = new();
 
+            // We use rootObjectType to get the type of our NFTs and then compare if the type of the object in the kiosk is rootObjectType.Collection.FullType
             foreach (DataDynamic answer in rootDynamic.Result.Data)
             {
                 if (answer.ObjectType == rootObjectType.Collection.FullType)
@@ -111,7 +114,7 @@ namespace KeepsakeSDK.Example.Game.UI
             string token = await KeepsakeSDK.LoginToKeepsake(signature, timestamp);
             Root rootMyListing = await KeepsakeSDK.GetMyListing(token);
 
-            OpenMyNFT(rootNft.Result, rootMyListing.Results, kioskRoot.Result.Data[0].Data.Display.Data.Kiosk, false);
+            OpenMyNFT(rootNft.Result, rootMyListing.Results, false);
             OpenMarket(root.Results, kioskRoot.Result.Data[0].Data.Display.Data.Kiosk, false);
 
             ActivityIndicatorItem.Close();
@@ -158,7 +161,7 @@ namespace KeepsakeSDK.Example.Game.UI
                     cardInfo.BuyBtn.onClick.AddListener(async delegate {
                         ActivityIndicatorItem.Open();
 
-                        await KeepsakeSDK.UnlistAssetBuild(results[cardInfo.index].Id, _nickname, _secretKey, _walletId);
+                        await KeepsakeSDK.UnlistAsset(results[cardInfo.index].Id, _nickname, _secretKey, _walletId);
                         await OpenMainMenu(_nickname, _walletId);
 
                         ActivityIndicatorItem.Close();
@@ -186,7 +189,7 @@ namespace KeepsakeSDK.Example.Game.UI
             _infoWindow.SetActive(true);
         }
 
-        public void OpenMyNFT(List<ResultMulti> results, List<Result> resultListing, string kiosk, bool open = true)
+        public void OpenMyNFT(List<ResultMulti> results, List<Result> resultListing, bool open = true)
         {
             _myNftMenuItem.gameObject.SetActive(open);
 
@@ -274,7 +277,7 @@ namespace KeepsakeSDK.Example.Game.UI
                     {
                         ActivityIndicatorItem.Open();
 
-                        await KeepsakeSDK.UnlistAssetBuild(listingId, _nickname, _secretKey, _walletId);
+                        await KeepsakeSDK.UnlistAsset(listingId, _nickname, _secretKey, _walletId);
                         await OpenMainMenu(_nickname, _walletId);
 
                         ActivityIndicatorItem.Close();

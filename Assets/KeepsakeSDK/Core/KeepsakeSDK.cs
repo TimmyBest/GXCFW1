@@ -338,7 +338,7 @@ namespace KeepsakeSDK
         /// <param name="nftCollection">Address NFT Collection.</param>
         /// <param name="searchName">Name NFT Collection.</param>
         [Http("https://beta-api.keepsake.gg/web/v1/listings/search")]
-        public static async Task<Root> OnSearchListing(int salePrice, string nftCollection, string searchName)
+        public static async Task<string> OnSearchListing(int salePrice, string nftCollection, string searchName)
         {
             HttpAttribute attribute = HttpAttribute.GetAttributeCustom<KeepsakeSDK>("OnSearchListing");
             string requestBody = $@"
@@ -352,9 +352,8 @@ namespace KeepsakeSDK
             }}";
 
             string response = await httpClient.PostRequest(attribute.Url, requestBody);
-            Root root = JsonConvert.DeserializeObject<Root>(response);
 
-            return root;
+            return response;
         }
 
         /// <summary>
@@ -468,9 +467,9 @@ namespace KeepsakeSDK
         /// <param name="nftId">NFT id.</param>
         /// <param name="token">The token that was received upon successful login in Keepsake.</param>
         [Http("https://beta-api.keepsake.gg/web/v1/listings/unlist/")]
-        public static async Task<string> UnlistAsset(string nftId, string token)
+        public static async Task<string> UnlistAssetBuild(string nftId, string token)
         {
-            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<KeepsakeSDK>("UnlistAsset");
+            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<KeepsakeSDK>("UnlistAssetBuild");
 
             string requestBody = "";
 
@@ -600,13 +599,13 @@ namespace KeepsakeSDK
         /// <param name="nickname">User nickname.</param>
         /// <param name="secretKey">Used to encrypt a user's wallet private key. Typically, this would tie to your app's registration and authentication.</param>
         /// <param name="walletId">The wallet address.</param>
-        public static async Task<string> UnlistAssetBuild(string nftId, string nickname, string secretKey, string walletId)
+        public static async Task<string> UnlistAsset(string nftId, string nickname, string secretKey, string walletId)
         {
             string sessionToken = await OnCreateSession(secretKey);
             string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
             string signature = await SignPersonalMessage(nickname, timestamp, sessionToken);
             string token = await LoginToKeepsake(signature, timestamp);
-            string gaslessTx = await UnlistAsset(nftId, token);
+            string gaslessTx = await UnlistAssetBuild(nftId, token);
             ResultDev rootDev = await DevInspectTransactionBlock(walletId, gaslessTx);
             string response = await ExecuteGaslessTransactionBlock(nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
 
