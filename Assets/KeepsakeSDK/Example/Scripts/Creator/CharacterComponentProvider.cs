@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace KeepsakeSDK.Example.Game.Provider
 {
-    public class PersonComponentProvider : MonoBehaviour, IPersonComponentProvider
+    public class CharacterComponentProvider : MonoBehaviour, ICharacterComponentProvider
     {
         [SerializeField] protected MeshRenderer _meshRenderer;
 

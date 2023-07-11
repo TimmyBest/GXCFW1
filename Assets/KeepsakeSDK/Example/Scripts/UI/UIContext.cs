@@ -130,13 +130,13 @@ namespace KeepsakeSDK.Example.Game.UI
                 Destroy(childTransform.gameObject);
             }
 
-            PersonCreator personCreator = new PersonCreator();
+            CharacterCreator CharacterCreator = new CharacterCreator();
 
             for (int i = 0; i < results.Count; i++)
             {
                 CardInfoItem cardInfo = GameObject.Instantiate(_cardInfo, _contentMarket).GetComponent<CardInfoItem>();
 
-                GameObject objectModel = personCreator.CreatePerson(prefabCubix, new Vector3(0, -10000, 0), "Cubix",
+                GameObject objectModel = CharacterCreator.CreateCharacter(prefabCubix, new Vector3(0, -10000, 0), "Cubix",
                     (int)ColorType.Parse(typeof(ColorType), results[i].Nft.Fields.SideColor),
                     (int)ColorType.Parse(typeof(ColorType), results[i].Nft.Fields.EdgeColor));
 
@@ -198,7 +198,7 @@ namespace KeepsakeSDK.Example.Game.UI
                 Transform childTransform = _contentMyNFT.GetChild(i);
                 Destroy(childTransform.gameObject);
             }
-            PersonCreator personCreator = new PersonCreator();
+            CharacterCreator CharacterCreator = new CharacterCreator();
 
             for (int i = 0; i < results.Count; i++)
             {
@@ -209,7 +209,7 @@ namespace KeepsakeSDK.Example.Game.UI
                 string edgeColor = results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[2].Fields.Value;
                 string sideColor = results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[3].Fields.Value;
 
-                GameObject objectModel =  personCreator.CreatePerson(prefabCubix, new Vector3(0, -10000, 0), "Cubix",
+                GameObject objectModel =  CharacterCreator.CreateCharacter(prefabCubix, new Vector3(0, -10000, 0), "Cubix",
                     (int)ColorType.Parse(typeof(ColorType), sideColor),
                     (int)ColorType.Parse(typeof(ColorType), edgeColor));
 

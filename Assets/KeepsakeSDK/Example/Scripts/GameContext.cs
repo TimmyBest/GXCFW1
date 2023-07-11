@@ -18,7 +18,7 @@ namespace KeepsakeSDK.Example.Game
 {
     public class GameContext : MonoBehaviour
     {
-        private IPersonCreator _personCreator = new PersonCreator();
+        private ICharacterCreator _characterCreator = new CharacterCreator();
 
         private Action<bool> _actionGame;
 
@@ -58,7 +58,7 @@ namespace KeepsakeSDK.Example.Game
             _UIContext.OpenLoginWindow();
         }
 
-        public void TunningPersonAction(Result result)
+        public void TunningCharacterAction(Result result)
         {
             Vector3 scale = new Vector3(result.Nft.Fields.Size, result.Nft.Fields.Size, result.Nft.Fields.Size);
             float speed = result.Nft.Fields.Speed;
@@ -74,7 +74,7 @@ namespace KeepsakeSDK.Example.Game
                 movement.OnSetupGrid(_gridModel);
             }
 
-            _personCreator.TunningPerson(_currentPlayer, sideColor, edgeColor);
+            _characterCreator.TunningCharacter(_currentPlayer, sideColor, edgeColor);
 
             _isGame = true;
             _UIContext.OpenInfoWindow();
@@ -89,7 +89,7 @@ namespace KeepsakeSDK.Example.Game
 
             _gridModel = new GridModel(scale.y);
 
-            _currentPlayer = _personCreator.CreatePerson(_prefabPlayer, new Vector3(_gridModel.cellPositions[0, 0].x, 0f, _gridModel.cellPositions[0, 0].z),
+            _currentPlayer = _characterCreator.CreateCharacter(_prefabPlayer, new Vector3(_gridModel.cellPositions[0, 0].x, 0f, _gridModel.cellPositions[0, 0].z),
                 CUBIX_NAME, 1, 1);
 
             if (_currentPlayer.TryGetComponent(out PlayerMovement movement))
@@ -107,7 +107,7 @@ namespace KeepsakeSDK.Example.Game
             }
             _playerInput.onHold += RotateCamera;
 
-            TunningPersonAction(result);
+            TunningCharacterAction(result);
         }
 
         private void OnApplicationQuit()
@@ -246,7 +246,7 @@ namespace KeepsakeSDK.Example.Game
                 int number = UnityEngine.Random.Range(0, cellModels.Count);
                 newPos += _vectorOffsets[cellModels[number].number];
                 newPos.y = 0.15f;
-                CellModel newCritter = new CellModel(_personCreator.CreatePerson(_prefabCritter, newPos, SPHERIX_NAME, UnityEngine.Random.Range(1, 11),
+                CellModel newCritter = new CellModel(_characterCreator.CreateCharacter(_prefabCritter, newPos, SPHERIX_NAME, UnityEngine.Random.Range(1, 11),
                     UnityEngine.Random.Range(1, 11)), cellModels[number].number, newPos);
 
                 _cellCritters[nextCell.RowNumber, nextCell.ColumnNumber].ListOfCritters[cellModels[number].number] = newCritter;

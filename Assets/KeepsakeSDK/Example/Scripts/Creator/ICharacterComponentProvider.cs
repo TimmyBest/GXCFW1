@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace KeepsakeSDK.Example.Interfaces
 {
-    public interface IPersonComponentProvider
+    public interface ICharacterComponentProvider
     {
         MeshRenderer GetMeshRenderer();
     }

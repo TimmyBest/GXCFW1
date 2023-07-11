@@ -85,6 +85,7 @@ public class SnapshotCamera : MonoBehaviour
         snapshotCamera.cam = cam;
         snapshotCamera.layer = layer;
 
+        Destroy(snapshotCameraGO);
         // Return the SnapshotCamera
         return snapshotCamera;
     }
