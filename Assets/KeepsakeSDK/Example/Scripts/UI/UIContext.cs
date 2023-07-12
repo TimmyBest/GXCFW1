@@ -161,8 +161,9 @@ namespace KeepsakeSDK.Example.Game.UI
                     cardInfo.BuyBtn.onClick.AddListener(async delegate {
                         ActivityIndicatorItem.Open();
 
-                        await KeepsakeSDK.UnlistAsset(results[cardInfo.index].Id, _nickname, _secretKey, _walletId);
-                        await OpenMainMenu(_nickname, _walletId);
+                        StatusTransaction status = await KeepsakeSDK.UnlistAsset(results[cardInfo.index].Id, _nickname, _secretKey, _walletId);
+                        string tooltip = status.ToString() + " transaction";
+                        await OpenMainMenu(_nickname, _walletId, tooltip);
 
                         ActivityIndicatorItem.Close();
                         _marketMenuItem.gameObject.SetActive(false);
@@ -174,8 +175,9 @@ namespace KeepsakeSDK.Example.Game.UI
                     cardInfo.BuyBtn.onClick.AddListener(async delegate {
                         ActivityIndicatorItem.Open();
 
-                        await KeepsakeSDK.BuyNFT(results[cardInfo.index].Id, _nickname, _secretKey, _walletId);
-                        await OpenMainMenu(_nickname, _walletId);
+                        StatusTransaction status = await KeepsakeSDK.BuyNFT(results[cardInfo.index].Id, _nickname, _secretKey, _walletId);
+                        string tooltip = status.ToString() + " transaction";
+                        await OpenMainMenu(_nickname, _walletId, tooltip);
 
                         ActivityIndicatorItem.Close();
                         _marketMenuItem.gameObject.SetActive(false);
@@ -257,8 +259,9 @@ namespace KeepsakeSDK.Example.Game.UI
                     {
                         ActivityIndicatorItem.Open();
 
-                        await KeepsakeSDK.SellNFT(cardInfo.Id, double.Parse(cardInfo.sellInputField.text, CultureInfo.InvariantCulture.NumberFormat), _nickname, _secretKey, _walletId);
-                        await OpenMainMenu(_nickname, _walletId);
+                        StatusTransaction status = await KeepsakeSDK.SellNFT(cardInfo.Id, double.Parse(cardInfo.sellInputField.text, CultureInfo.InvariantCulture.NumberFormat), _nickname, _secretKey, _walletId);
+                        string tooltip = status.ToString() + " transaction";
+                        await OpenMainMenu(_nickname, _walletId, tooltip);
 
                         ActivityIndicatorItem.Close();
                         _myNftMenuItem.gameObject.SetActive(false);
@@ -277,8 +280,9 @@ namespace KeepsakeSDK.Example.Game.UI
                     {
                         ActivityIndicatorItem.Open();
 
-                        await KeepsakeSDK.UnlistAsset(listingId, _nickname, _secretKey, _walletId);
-                        await OpenMainMenu(_nickname, _walletId);
+                        StatusTransaction status = await KeepsakeSDK.UnlistAsset(listingId, _nickname, _secretKey, _walletId);
+                        string tooltip = status.ToString() + " transaction";
+                        await OpenMainMenu(_nickname, _walletId, tooltip);
 
                         ActivityIndicatorItem.Close();
                         _myNftMenuItem.gameObject.SetActive(false);
@@ -289,7 +293,7 @@ namespace KeepsakeSDK.Example.Game.UI
             }
         }
 
-        public async Task OpenMainMenu(string nickname, string walletId)
+        public async Task OpenMainMenu(string nickname, string walletId, string tooltip = "")
         {
             RootBalance coinRoot = await KeepsakeSDK.GetWalletBalance(walletId);
             double balance = coinRoot.Result.TotalBalance / 1000000000;
@@ -298,6 +302,7 @@ namespace KeepsakeSDK.Example.Game.UI
             _mainMenuItem.NicknameText.text = nickname;
             _mainMenuItem.WalletIdText.text = walletId;
             _mainMenuItem.BalanceText.text = balance.ToString() + " SUI";
+            _mainMenuItem.PlayTooltip(tooltip);
         }
 
         public void OpenLoginWindow(string errorMessage = "")

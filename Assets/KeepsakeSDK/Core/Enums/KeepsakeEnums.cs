@@ -13,4 +13,10 @@ namespace KeepsakeSDK.Core.Enums
         NicknameEmpty,
         Success
     }
+
+    public enum StatusTransaction
+    {
+        Failure,
+        Success
+    }
 }

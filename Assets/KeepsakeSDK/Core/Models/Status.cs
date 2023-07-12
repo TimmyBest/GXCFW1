@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using System;
 
 namespace KeepsakeSDK.Core.Models
@@ -5,6 +6,7 @@ namespace KeepsakeSDK.Core.Models
     [Serializable]
     public class Status
     {
-        public string _Status { get; set; }
+        [JsonProperty("status")]
+        public string status { get; set; }
     }
 }

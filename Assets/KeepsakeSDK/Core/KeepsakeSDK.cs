@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace KeepsakeSDK
 {
@@ -263,7 +264,7 @@ namespace KeepsakeSDK
                     {{
                         ""showRawInput"": false,
                         ""showInput"": false,
-                        ""showEffects"": false,
+                        ""showEffects"": true,
                         ""showEvents"": false,
                         ""showObjectChanges"": false,
                         ""showBalanceChanges"": false
@@ -274,9 +275,11 @@ namespace KeepsakeSDK
             }}";
 
             string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, "X-API-Key", "sui_testnet_a3990d6eb0bd26173a4a5e39a7961bc6");
-            //Session session = JsonConvert.DeserializeObject<Session>(response);
+            RootTransaction root = JsonConvert.DeserializeObject<RootTransaction>(response);
+            if (root.Result.Effects.Status.status == null)
+                return "failure";
 
-            return response;
+            return root.Result.Effects.Status.status;
         }
 
         /// <summary>
@@ -562,7 +565,7 @@ namespace KeepsakeSDK
         /// <param name="nickname">User nickname.</param>
         /// <param name="secretKey">Used to encrypt a user's wallet private key. Typically, this would tie to your app's registration and authentication.</param>
         /// <param name="walletId">The wallet address.</param>
-        public static async Task<string> BuyNFT(string nftId, string nickname, string secretKey, string walletId)
+        public static async Task<StatusTransaction> BuyNFT(string nftId, string nickname, string secretKey, string walletId)
         {
             string sessionToken = await OnCreateSession(secretKey);
             string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
@@ -574,7 +577,7 @@ namespace KeepsakeSDK
                 string gaslessTxMerge = await MergeCoins(token, coinRoot.Result.Data.ToArray());
                 ResultDev rootDevMerge = await DevInspectTransactionBlock(walletId, gaslessTxMerge);
                 string responseMerge = await ExecuteGaslessTransactionBlock(nickname, sessionToken, gaslessTxMerge, rootDevMerge.Effects.GasUsed.ComputationCost + rootDevMerge.Effects.GasUsed.StorageCost);
-
+                
                 await Task.Delay(3000);
 
                 coinRoot = await GetOwnedObjectCoins(walletId);
@@ -589,7 +592,7 @@ namespace KeepsakeSDK
             ResultDev rootDev = await DevInspectTransactionBlock(walletId, gaslessTx);
             string response = await ExecuteGaslessTransactionBlock(nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
 
-            return response;
+            return ConvertStringToStatus(response);
         }
 
         /// <summary>
@@ -599,7 +602,7 @@ namespace KeepsakeSDK
         /// <param name="nickname">User nickname.</param>
         /// <param name="secretKey">Used to encrypt a user's wallet private key. Typically, this would tie to your app's registration and authentication.</param>
         /// <param name="walletId">The wallet address.</param>
-        public static async Task<string> UnlistAsset(string nftId, string nickname, string secretKey, string walletId)
+        public static async Task<StatusTransaction> UnlistAsset(string nftId, string nickname, string secretKey, string walletId)
         {
             string sessionToken = await OnCreateSession(secretKey);
             string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
@@ -609,7 +612,7 @@ namespace KeepsakeSDK
             ResultDev rootDev = await DevInspectTransactionBlock(walletId, gaslessTx);
             string response = await ExecuteGaslessTransactionBlock(nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
 
-            return response;
+            return ConvertStringToStatus(response);
         }
 
         /// <summary>
@@ -618,7 +621,7 @@ namespace KeepsakeSDK
         /// <param name="nickname">User nickname.</param>
         /// <param name="secretKey">Used to encrypt a user's wallet private key. Typically, this would tie to your app's registration and authentication.</param>
         /// <param name="walletId">The wallet address.</param>
-        public static async Task<string> CreateKiosk(string nickname, string secretKey, string walletId)
+        public static async Task<StatusTransaction> CreateKiosk(string nickname, string secretKey, string walletId)
         {
             string sessionToken = await OnCreateSession(secretKey);
             string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
@@ -628,7 +631,7 @@ namespace KeepsakeSDK
             ResultDev rootDev = await DevInspectTransactionBlock(walletId, gaslessTx);
             string response = await ExecuteGaslessTransactionBlock(nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
 
-            return response;
+            return ConvertStringToStatus(response);
         }
 
         /// <summary>
@@ -639,7 +642,7 @@ namespace KeepsakeSDK
         /// <param name="nickname">User nickname.</param>
         /// <param name="secretKey">Used to encrypt a user's wallet private key. Typically, this would tie to your app's registration and authentication.</param>
         /// <param name="walletId">The wallet address.</param>
-        public static async Task<string> SellNFT(string nftId, double amount, string nickname, string secretKey, string walletId)
+        public static async Task<StatusTransaction> SellNFT(string nftId, double amount, string nickname, string secretKey, string walletId)
         {
             string sessionToken = await OnCreateSession(secretKey);
             string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
@@ -655,7 +658,18 @@ namespace KeepsakeSDK
             ResultDev rootDev = await DevInspectTransactionBlock(walletId, gaslessTx);
             string response = await ExecuteGaslessTransactionBlock(nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
 
-            return response;
+            return ConvertStringToStatus(response);
+        }
+
+        private static StatusTransaction ConvertStringToStatus(string response)
+        {
+            switch (response)
+            {
+                case "success":
+                    return StatusTransaction.Success;
+                default:
+                    return StatusTransaction.Failure;
+            }
         }
     }
 }
