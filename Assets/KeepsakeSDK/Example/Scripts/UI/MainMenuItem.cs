@@ -27,5 +27,10 @@ namespace KeepsakeSDK.Example.Game.UI
             yield return new WaitForSeconds(3);
             TooltipText.text = "";
         }
+
+        private void OnDisable()
+        {
+            TooltipText.text = "";
+        }
     }
 }

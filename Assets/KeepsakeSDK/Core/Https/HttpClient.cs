@@ -106,7 +106,7 @@ namespace KeepsakeSDK.Core.Https
     {
         public static TaskAwaiter<UnityWebRequest.Result> GetAwaiter(this UnityWebRequestAsyncOperation reqOp)
         {
-            TaskCompletionSource<UnityWebRequest.Result> tsc = new();
+            TaskCompletionSource<UnityWebRequest.Result> tsc = new TaskCompletionSource<UnityWebRequest.Result>();
             reqOp.completed += asyncOp => tsc.TrySetResult(reqOp.webRequest.result);
 
             if (reqOp.isDone)

@@ -31,7 +31,7 @@ namespace KeepsakeSDK.Example.Game.Models
             }
         }
 
-        public List<CellModel> ListOfCritters { get; set; } = new();
+        public List<CellModel> ListOfCritters { get; set; } = new List<CellModel>();
 
         public bool ExistFreeCell()
         {

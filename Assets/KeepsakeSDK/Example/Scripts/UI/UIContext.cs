@@ -97,7 +97,7 @@ namespace KeepsakeSDK.Example.Game.UI
             KioskRootOwned kioskRoot = await KeepsakeSDK.GetOwnedObjectKiosk(_walletId);
             RootDynamic rootDynamic = await KeepsakeSDK.GetDynamicField(kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
             RootObjectType rootObjectType = await KeepsakeSDK.GetObjectType("6462c8af23a2b24070683fd1");
-            List<string> objects = new();
+            List<string> objects = new List<string>();
 
             // We use rootObjectType to get the type of our NFTs and then compare if the type of the object in the kiosk is rootObjectType.Collection.FullType
             foreach (DataDynamic answer in rootDynamic.Result.Data)

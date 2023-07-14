@@ -13,7 +13,7 @@ namespace KeepsakeSDK
 {
     public sealed class KeepsakeSDK
     {
-        private static HttpClient httpClient = new();
+        private static HttpClient httpClient = new HttpClient();
 
         /// <summary>
         /// For security purposes, you must generate a session token before you create a wallet, sign transactions, or execute transactions. Session tokens expire after 10 minutes.
