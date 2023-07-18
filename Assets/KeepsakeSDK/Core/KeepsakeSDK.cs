@@ -378,7 +378,7 @@ namespace KeepsakeSDK
             string response = await httpClient.PostRequest(attribute.Url, requestBody);
             KeepsakeRoot session = JsonConvert.DeserializeObject<KeepsakeRoot>(response);
 
-            return session.token;
+            return session.Token;
         }
 
         /// <summary>
@@ -581,6 +581,10 @@ namespace KeepsakeSDK
                 await Task.Delay(3000);
 
                 coinRoot = await GetOwnedObjectCoins(walletId);
+            }
+            if (coinRoot.Result.Data.Count <= 0)
+            {
+                return ConvertStringToStatus("Failure");
             }
             KioskRootOwned kioskRoot = await GetOwnedObjectKiosk(walletId);
             if (kioskRoot.Result.Data.Count <= 0)

@@ -5,8 +5,8 @@ namespace KeepsakeSDK.Core.Models
     [Serializable]
     public class KeepsakeRoot
     {
-        public string status { get; set; }
-        public string token { get; set; }
-        public Data data { get; set; }
+        public string Status { get; set; }
+        public string Token { get; set; }
+        public Data Data { get; set; }
     }
 }
