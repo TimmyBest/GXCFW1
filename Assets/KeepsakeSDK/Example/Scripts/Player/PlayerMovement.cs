@@ -5,7 +5,7 @@ namespace KeepsakeSDK.Example.Game.Player.Movement
 {
     public class PlayerMovement : MonoBehaviour
     {
-        private Cell _currentCell = new(0, 0);
+        private Cell _currentCell = new Cell(0, 0);
 
         private bool _moving = false;
         private bool _touch = false;
