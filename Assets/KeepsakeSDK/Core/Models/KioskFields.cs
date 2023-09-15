@@ -7,5 +7,7 @@ namespace KeepsakeSDK.Core.Models
     {
         public string Kiosk { get; set; }
         public string Owner { get; set; }
+
+        public KioskCap Cap { get; set; }
     }
 }

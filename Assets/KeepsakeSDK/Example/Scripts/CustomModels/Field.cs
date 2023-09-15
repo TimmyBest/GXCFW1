@@ -13,6 +13,12 @@ namespace KeepsakeSDK.Core.Models
         public float Size { get; set; }
         public float Speed { get; set; }
 
+        //my own custom fields game related
+        public float Level { get; set; }
+        public float Damage { get; set; }
+        public float ManaCost { get; set; }
+        public float Health { get; set; }
+
         [JsonProperty("edge color")]
         public string EdgeColor { get; set; }
 

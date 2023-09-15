@@ -13,7 +13,8 @@ namespace KeepsakeSDK.Example.Game.UI
 {
     public class UIContext : MonoBehaviour
     {
-        public string _secretKey = "anewsecretkey";
+        // public string _secretKey = "anewsecretkey";
+        public string _secretKey = "GAME_KEY_1";
         [Space(25f)]
         [SerializeField] private Transform _contentMarket;
         [SerializeField] private Transform _contentMyNFT;
@@ -91,12 +92,14 @@ namespace KeepsakeSDK.Example.Game.UI
         {
             ActivityIndicatorItem.Open();
 
-            string response = await KeepsakeSDK.OnSearchListing(1, "6462c8af23a2b24070683fd1", "Whacky Cube Smash");
+            string response = await KeepsakeSDK.OnSearchListing(1, "650352d76fd2f3e0ba574ee4", "Cubies");
             Root root = JsonConvert.DeserializeObject<Root>(response);
-
-            KioskRootOwned kioskRoot = await KeepsakeSDK.GetOwnedObjectKiosk(_walletId);
-            RootDynamic rootDynamic = await KeepsakeSDK.GetDynamicField(kioskRoot.Result.Data[0].Data.Display.Data.Kiosk);
-            RootObjectType rootObjectType = await KeepsakeSDK.GetObjectType("6462c8af23a2b24070683fd1");
+            
+            KioskRootOwned kioskRoot = await KeepsakeSDK.GetOwnedObjectSuiKiosk(_walletId);
+            Debug.Log("ITEM? kioskRoot:" + kioskRoot.ToString());
+            RootDynamic rootDynamic = await KeepsakeSDK.GetDynamicField(kioskRoot.Result.Data[0].Data.Content.fields.Cap.Fields.For);
+            Debug.Log("ITEM? rootDynamic:" + rootDynamic);
+            RootObjectType rootObjectType = await KeepsakeSDK.GetObjectType("650352d76fd2f3e0ba574ee4");
             List<string> objects = new List<string>();
 
             // We use rootObjectType to get the type of our NFTs and then compare if the type of the object in the kiosk is rootObjectType.Collection.FullType
@@ -105,6 +108,7 @@ namespace KeepsakeSDK.Example.Game.UI
                 if (answer.ObjectType == rootObjectType.Collection.FullType)
                 {
                     objects.Add(answer.ObjectId);
+                    Debug.Log("ITEM? :" + answer.ObjectId);
                 }
             }
             RootMulti rootNft = await KeepsakeSDK.GetMultiObjects(objects.ToArray());
@@ -114,8 +118,10 @@ namespace KeepsakeSDK.Example.Game.UI
             string token = await KeepsakeSDK.LoginToKeepsake(signature, timestamp);
             Root rootMyListing = await KeepsakeSDK.GetMyListing(token);
 
+            Debug.Log("INFO: Inside of my NFT:" + rootNft.Result);
+
             OpenMyNFT(rootNft.Result, rootMyListing.Results, false);
-            OpenMarket(root.Results, kioskRoot.Result.Data[0].Data.Display.Data.Kiosk, false);
+            OpenMarket(root.Results, kioskRoot.Result.Data[0].Data.Content.fields.Cap.Fields.For, false);
 
             ActivityIndicatorItem.Close();
         }
@@ -175,7 +181,7 @@ namespace KeepsakeSDK.Example.Game.UI
                     cardInfo.BuyBtn.onClick.AddListener(async delegate {
                         ActivityIndicatorItem.Open();
 
-                        StatusTransaction status = await KeepsakeSDK.BuyNFT(results[cardInfo.index].Id, _nickname, _secretKey, _walletId);
+                        StatusTransaction status = await KeepsakeSDK.BuyNFTSuiKiosk(results[cardInfo.index].Id, _nickname, _secretKey, _walletId);
                         string tooltip = status.ToString() + " transaction";
                         await OpenMainMenu(_nickname, _walletId, tooltip);
 
@@ -193,6 +199,7 @@ namespace KeepsakeSDK.Example.Game.UI
 
         public void OpenMyNFT(List<ResultMulti> results, List<Result> resultListing, bool open = true)
         {
+            
             _myNftMenuItem.gameObject.SetActive(open);
 
             for (int i = 0; i < _contentMyNFT.childCount; i++)
@@ -205,11 +212,12 @@ namespace KeepsakeSDK.Example.Game.UI
             for (int i = 0; i < results.Count; i++)
             {
                 CardInfoItem cardInfo = GameObject.Instantiate(_cardInfo, _contentMyNFT).GetComponent<CardInfoItem>();
+                
 
-                float speed = float.Parse(results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[1].Fields.Value, CultureInfo.InvariantCulture.NumberFormat);
-                float size = float.Parse(results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[0].Fields.Value, CultureInfo.InvariantCulture.NumberFormat);
-                string edgeColor = results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[2].Fields.Value;
-                string sideColor = results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[3].Fields.Value;
+                float speed = float.Parse(results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[2].Fields.Value, CultureInfo.InvariantCulture.NumberFormat);
+                float size = float.Parse(results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[3].Fields.Value, CultureInfo.InvariantCulture.NumberFormat);
+                string edgeColor = results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[1].Fields.Value;
+                string sideColor = results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[0].Fields.Value;
 
                 GameObject objectModel =  CharacterCreator.CreateCharacter(prefabCubix, new Vector3(0, -10000, 0), "Cubix",
                     (int)ColorType.Parse(typeof(ColorType), sideColor),
@@ -259,7 +267,7 @@ namespace KeepsakeSDK.Example.Game.UI
                     {
                         ActivityIndicatorItem.Open();
 
-                        StatusTransaction status = await KeepsakeSDK.SellNFT(cardInfo.Id, double.Parse(cardInfo.sellInputField.text, CultureInfo.InvariantCulture.NumberFormat), _nickname, _secretKey, _walletId);
+                        StatusTransaction status = await KeepsakeSDK.SellNFTSuiKiosk(cardInfo.Id, double.Parse(cardInfo.sellInputField.text, CultureInfo.InvariantCulture.NumberFormat), _nickname, _secretKey, _walletId);
                         string tooltip = status.ToString() + " transaction";
                         await OpenMainMenu(_nickname, _walletId, tooltip);
 
@@ -281,6 +289,7 @@ namespace KeepsakeSDK.Example.Game.UI
                         ActivityIndicatorItem.Open();
 
                         StatusTransaction status = await KeepsakeSDK.UnlistAsset(listingId, _nickname, _secretKey, _walletId);
+                        Debug.Log("UNLIST: somwhere here");
                         string tooltip = status.ToString() + " transaction";
                         await OpenMainMenu(_nickname, _walletId, tooltip);
 
@@ -346,7 +355,7 @@ namespace KeepsakeSDK.Example.Game.UI
                 {
                     string walletId = await KeepsakeSDK.GetWallet(_loginItem.NicknameField.text);
 
-                    await KeepsakeSDK.CreateKiosk(_loginItem.NicknameField.text, _secretKey, walletId);
+                    await KeepsakeSDK.CreateSuiKiosk(_loginItem.NicknameField.text, _secretKey, walletId);
 
                     InitializeUser(_loginItem.NicknameField.text, walletId);
 

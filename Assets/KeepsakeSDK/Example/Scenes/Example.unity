@@ -1108,7 +1108,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a35e15af3c9a3804db300962f64cfc46, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _secretKey: anewsecretkey
+  _secretKey: GAME_KEY_1
   _contentMarket: {fileID: 1830509432}
   _contentMyNFT: {fileID: 1285513072}
   _cardInfo: {fileID: 1382939446066106713, guid: 3a9c8c9c44a044540bda566eec2e1de9, type: 3}
