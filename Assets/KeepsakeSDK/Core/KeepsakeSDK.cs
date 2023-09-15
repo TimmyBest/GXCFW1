@@ -49,7 +49,7 @@ namespace KeepsakeSDK
             string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, authorization_key, authorization_value);
 
             Session session = JsonConvert.DeserializeObject<Session>(response);
-            Debug.Log("INFO: " + session.Result);
+            
             return session.Result;
         }
 
@@ -70,7 +70,7 @@ namespace KeepsakeSDK
 
             string requestBody = $@"{{ ""jsonrpc"":""2.0"", ""method"":""shinami_wal_createWallet"", ""params"":[""{nickname}"", ""{sessionToken}""], ""id"":1 }}";
             string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, authorization_key, authorization_value);
-            Debug.Log("INFO create wallet: " + response);
+           
             Session session = JsonConvert.DeserializeObject<Session>(response);
 
             return session.Result;
@@ -526,13 +526,8 @@ namespace KeepsakeSDK
                 ""buyer_kiosk_cap"": ""{kioskCap}""
             }}";
 
-            Debug.Log("GETTING GAS: " + coin);
-            Debug.Log("GETTING GAS: " + kiosk);
-            Debug.Log("GETTING GAS: " + kioskCap);
-
             string response = await httpClient.PostRequestWithAuthorization(attribute.Url + nftId, requestBody, "Authorization", $"Bearer {token}");
             Gasless session = JsonConvert.DeserializeObject<Gasless>(response);
-            Debug.Log("GETTING GAS: " + session.GaslessTx);
             return session.GaslessTx;
         }
 
@@ -636,7 +631,7 @@ namespace KeepsakeSDK
             string requestBody = "";
 
             string response = await httpClient.GetRequestWithAuthorization(attribute.Url + nftId, requestBody, "Authorization", $"Bearer {token}");
-            Debug.Log("UNLIST: inside unlist build" + response);
+            
             Gasless session = JsonConvert.DeserializeObject<Gasless>(response);
 
             return session.GaslessTx;
@@ -925,7 +920,7 @@ namespace KeepsakeSDK
                 return await SellNFT(nftId, amount, nickname, secretKey, walletId);
             }
             string gaslessTx = await BuildSellSuiKioskTransaction(token, nftId, (amount * 1000000000).ToString(), kioskRoot.Result.Data[0].Data.Content.fields.Cap.Fields.For, kioskRoot.Result.Data[0].Data.ObjectId);
-            Debug.Log("STEPPING INTO: " + gaslessTx);
+            
             ResultDev rootDev = await DevInspectTransactionBlock(walletId, gaslessTx);
             string response = await ExecuteGaslessTransactionBlock(nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
 

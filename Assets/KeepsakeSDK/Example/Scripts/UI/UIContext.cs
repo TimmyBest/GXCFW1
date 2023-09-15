@@ -96,9 +96,14 @@ namespace KeepsakeSDK.Example.Game.UI
             Root root = JsonConvert.DeserializeObject<Root>(response);
             
             KioskRootOwned kioskRoot = await KeepsakeSDK.GetOwnedObjectSuiKiosk(_walletId);
-            Debug.Log("ITEM? kioskRoot:" + kioskRoot.ToString());
+
+            if(kioskRoot.Result.Data.Count == 0){
+                await KeepsakeSDK.CreateSuiKiosk(_loginItem.NicknameField.text, _secretKey, _walletId);
+                await UpdateWindows();
+            }
+            
             RootDynamic rootDynamic = await KeepsakeSDK.GetDynamicField(kioskRoot.Result.Data[0].Data.Content.fields.Cap.Fields.For);
-            Debug.Log("ITEM? rootDynamic:" + rootDynamic);
+            
             RootObjectType rootObjectType = await KeepsakeSDK.GetObjectType("650352d76fd2f3e0ba574ee4");
             List<string> objects = new List<string>();
 
@@ -108,7 +113,6 @@ namespace KeepsakeSDK.Example.Game.UI
                 if (answer.ObjectType == rootObjectType.Collection.FullType)
                 {
                     objects.Add(answer.ObjectId);
-                    Debug.Log("ITEM? :" + answer.ObjectId);
                 }
             }
             RootMulti rootNft = await KeepsakeSDK.GetMultiObjects(objects.ToArray());
@@ -118,7 +122,6 @@ namespace KeepsakeSDK.Example.Game.UI
             string token = await KeepsakeSDK.LoginToKeepsake(signature, timestamp);
             Root rootMyListing = await KeepsakeSDK.GetMyListing(token);
 
-            Debug.Log("INFO: Inside of my NFT:" + rootNft.Result);
 
             OpenMyNFT(rootNft.Result, rootMyListing.Results, false);
             OpenMarket(root.Results, kioskRoot.Result.Data[0].Data.Content.fields.Cap.Fields.For, false);
@@ -289,7 +292,7 @@ namespace KeepsakeSDK.Example.Game.UI
                         ActivityIndicatorItem.Open();
 
                         StatusTransaction status = await KeepsakeSDK.UnlistAsset(listingId, _nickname, _secretKey, _walletId);
-                        Debug.Log("UNLIST: somwhere here");
+
                         string tooltip = status.ToString() + " transaction";
                         await OpenMainMenu(_nickname, _walletId, tooltip);
 
