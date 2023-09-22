@@ -122,6 +122,10 @@ namespace KeepsakeSDK.Example.Game.UI
             string token = await KeepsakeSDK.LoginToKeepsake(signature, timestamp);
             Root rootMyListing = await KeepsakeSDK.GetMyListing(token);
 
+            /// This can be placed anywhere, but it checks to see if the users personal kiosk is greater than or equal to 1, if so then run the transaction to withdraw
+            /// to the users wallet
+            StatusTransaction status = await KeepsakeSDK.ClaimSuiKioskFunds(_nickname, _secretKey, _walletId, kioskRoot.Result.Data[0].Data.Content.fields.Cap.Fields.For);
+
 
             OpenMyNFT(rootNft.Result, rootMyListing.Results, false);
             OpenMarket(root.Results, kioskRoot.Result.Data[0].Data.Content.fields.Cap.Fields.For, false);

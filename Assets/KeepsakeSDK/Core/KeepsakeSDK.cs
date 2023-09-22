@@ -49,7 +49,7 @@ namespace KeepsakeSDK
             string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, authorization_key, authorization_value);
 
             Session session = JsonConvert.DeserializeObject<Session>(response);
-            
+            Debug.Log("INFO: " + session.Result);
             return session.Result;
         }
 
@@ -70,7 +70,7 @@ namespace KeepsakeSDK
 
             string requestBody = $@"{{ ""jsonrpc"":""2.0"", ""method"":""shinami_wal_createWallet"", ""params"":[""{nickname}"", ""{sessionToken}""], ""id"":1 }}";
             string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, authorization_key, authorization_value);
-           
+            Debug.Log("INFO create wallet: " + response);
             Session session = JsonConvert.DeserializeObject<Session>(response);
 
             return session.Result;
@@ -526,8 +526,39 @@ namespace KeepsakeSDK
                 ""buyer_kiosk_cap"": ""{kioskCap}""
             }}";
 
+            Debug.Log("GETTING GAS: " + coin);
+            Debug.Log("GETTING GAS: " + kiosk);
+            Debug.Log("GETTING GAS: " + kioskCap);
+
             string response = await httpClient.PostRequestWithAuthorization(attribute.Url + nftId, requestBody, "Authorization", $"Bearer {token}");
             Gasless session = JsonConvert.DeserializeObject<Gasless>(response);
+            Debug.Log("GETTING GAS: " + session.GaslessTx);
+            return session.GaslessTx;
+        }
+
+        /// <summary>
+        /// Build transaction to withdraw Sui Kiosk Proceeds.
+        /// </summary>
+        /// <param name="token">The token that was received upon successful login in Keepsake.</param>
+        /// <param name="kiosk">Kiosk address.</param>
+        /// <param name="kioskCap">Kiosk Capability object address that authorizes the action to the kiosk</param>
+        [Http("https://beta-api.keepsake.gg/web/v1/txns/withdraw/")]
+        public static async Task<string> BuildWithdrawalSuiKioskProceeds(string token, string kiosk, string kioskCap)
+        {
+            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<KeepsakeSDK>("BuildWithdrawalSuiKioskProceeds");
+
+            string requestBody = $@"{{
+                ""kiosk"": ""{kiosk}"",
+                ""kiosk_cap"": ""{kioskCap}""
+            }}";
+
+            
+            Debug.Log("GETTING GAS: " + kiosk);
+            Debug.Log("GETTING GAS: " + kioskCap);
+
+            string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, "Authorization", $"Bearer {token}");
+            Gasless session = JsonConvert.DeserializeObject<Gasless>(response);
+            Debug.Log("GETTING GAS: " + session.GaslessTx);
             return session.GaslessTx;
         }
 
@@ -631,7 +662,6 @@ namespace KeepsakeSDK
             string requestBody = "";
 
             string response = await httpClient.GetRequestWithAuthorization(attribute.Url + nftId, requestBody, "Authorization", $"Bearer {token}");
-            
             Gasless session = JsonConvert.DeserializeObject<Gasless>(response);
 
             return session.GaslessTx;
@@ -686,6 +716,32 @@ namespace KeepsakeSDK
             Gasless session = JsonConvert.DeserializeObject<Gasless>(response);
 
             return session.GaslessTx;
+        }
+
+        ///<summary>
+        ///Get the Sui Kiosk Profit Balance
+        ///</summary>
+        [Http("https://integrated.keepsake.gg/web/v1/sdk/getObject")]
+        public static async Task<RootGetObject> GetObject(string kiosk)
+        {
+            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<KeepsakeSDK>("GetObject");
+
+            string authorization_key = await AuthorizationKey();
+            string authorization_value = await AuthorizationValue();
+
+            string requestBody = $@"{{ ""jsonrpc"":""2.0"", 
+                ""method"":""sui_getObject"",
+                ""params"":[""{kiosk}"",
+                {{
+                        ""showContent"": true
+                }}],     
+                ""id"":1}}";
+
+            string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, authorization_key, authorization_value);
+            RootGetObject root = JsonConvert.DeserializeObject<RootGetObject>(response);
+
+            return root;
+
         }
 
 
@@ -919,13 +975,57 @@ namespace KeepsakeSDK
                 await CreateSuiKiosk(nickname, secretKey, walletId);
                 return await SellNFT(nftId, amount, nickname, secretKey, walletId);
             }
+
+            Debug.Log("TX: token " + token);
+            Debug.Log("TX: kiosk " + kioskRoot.Result.Data[0].Data.Content.fields.Cap.Fields.For);
+            Debug.Log("TX: kiosk cap " + kioskRoot.Result.Data[0].Data.ObjectId);
+
+
             string gaslessTx = await BuildSellSuiKioskTransaction(token, nftId, (amount * 1000000000).ToString(), kioskRoot.Result.Data[0].Data.Content.fields.Cap.Fields.For, kioskRoot.Result.Data[0].Data.ObjectId);
-            
+            Debug.Log("STEPPING INTO: " + gaslessTx);
             ResultDev rootDev = await DevInspectTransactionBlock(walletId, gaslessTx);
             string response = await ExecuteGaslessTransactionBlock(nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
 
             return ConvertStringToStatus(response);
         }
+
+        /// <summary>
+        /// Withdrawing from Sui Kiosk
+        /// </summary>
+        /// <param name="nickname">user nickname</param>
+        /// <param name="secretKey">Used to encrypt a user's wallet private key. Typically, this would tie to your app's registration and authentication.</param>
+        /// <param name="walletId">The wallet address.</param>
+        /// <param name="kiosk">Personal Sui kiosk address of user</param>
+        /// <returns></returns>
+       public static async Task<StatusTransaction> ClaimSuiKioskFunds(string nickname, string secretKey, string walletId, string kiosk)
+       {
+            //first check to ensure that there is profit in the account
+            RootGetObject rootObject = await GetObject(kiosk);
+            double profitTotal = Double.Parse(rootObject.Result.Data.Content.Fields.Profits);
+
+            if(profitTotal >= 1)
+            {
+                string sessionToken = await OnCreateSession(secretKey);
+                string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+                string signature = await SignPersonalMessage(nickname, timestamp, sessionToken);
+                string token = await LoginToKeepsake(signature, timestamp);
+                KioskRootOwned kioskRoot = await GetOwnedObjectSuiKiosk(walletId);
+                if (kioskRoot.Result.Data.Count <= 0)
+                {
+                    await CreateSuiKiosk(nickname, secretKey, walletId);
+                }
+                
+                string gaslessTx = await BuildWithdrawalSuiKioskProceeds(token, kioskRoot.Result.Data[0].Data.Content.fields.Cap.Fields.For, kioskRoot.Result.Data[0].Data.ObjectId);
+                ResultDev rootDev = await DevInspectTransactionBlock(walletId, gaslessTx);
+                string response = await ExecuteGaslessTransactionBlock(nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
+                return ConvertStringToStatus(response);
+            }else{
+                return StatusTransaction.Failure;
+            }
+
+
+            
+       }
 
         private static StatusTransaction ConvertStringToStatus(string response)
         {
