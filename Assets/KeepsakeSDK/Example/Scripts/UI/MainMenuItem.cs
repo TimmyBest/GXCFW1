@@ -13,6 +13,7 @@ namespace KeepsakeSDK.Example.Game.UI
 
         public Button MyNftBtn;
         public Button MarketBtn;
+        public Button GiftShopBtn;
         public Button UnloginBtn;
         public Button RefreshBtn;
 

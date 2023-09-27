@@ -18,6 +18,7 @@ namespace KeepsakeSDK.Example.Game.UI
         [Space(25f)]
         [SerializeField] private Transform _contentMarket;
         [SerializeField] private Transform _contentMyNFT;
+        [SerializeField] private Transform _contentGiftShop;
         [SerializeField] private GameObject _cardInfo;
         [SerializeField] private GameObject _mainMenuWindow;
         [SerializeField] private GameObject _loginWindow;
@@ -28,6 +29,7 @@ namespace KeepsakeSDK.Example.Game.UI
         public ActivityIndicatorItem ActivityIndicatorItem;
         [SerializeField] private MarketMenuItem _marketMenuItem;
         [SerializeField] private MyNFTMenuItem _myNftMenuItem;
+        [SerializeField] private GiftShopMenuItem _giftShopMenuItem;
 
         private string _nickname = "";
         private string _walletId = "";
@@ -52,6 +54,14 @@ namespace KeepsakeSDK.Example.Game.UI
                 _myNftMenuItem.gameObject.SetActive(true);
             });
 
+            _mainMenuItem.GiftShopBtn.onClick.AddListener(async delegate {
+                await UpdateWindows();
+
+                _mainMenuWindow.SetActive(false);
+                _giftShopMenuItem.gameObject.SetActive(true);
+                Debug.Log("inside giftshop");
+            });
+
             _marketMenuItem.backBtn.onClick.AddListener(delegate
             {
 
@@ -62,6 +72,12 @@ namespace KeepsakeSDK.Example.Game.UI
             _myNftMenuItem.backBtn.onClick.AddListener(delegate
             {
                 _myNftMenuItem.gameObject.SetActive(false);
+                _mainMenuWindow.SetActive(true);
+            });
+
+            _giftShopMenuItem.backBtn.onClick.AddListener(delegate
+            {
+                _giftShopMenuItem.gameObject.SetActive(false);
                 _mainMenuWindow.SetActive(true);
             });
 
@@ -94,6 +110,10 @@ namespace KeepsakeSDK.Example.Game.UI
 
             string response = await KeepsakeSDK.OnSearchListing(1, "650352d76fd2f3e0ba574ee4", "Cubies");
             Root root = JsonConvert.DeserializeObject<Root>(response);
+
+            //Get the id and kiosk id of the gift shop bag to be used. Items in here a totally free
+            string rootGiftShopId = root.Results[0].Collection.GrabBags[0].Id;
+            string rootGiftShopKioskId = root.Results[0].Collection.GrabBags[0].KioskId;
             
             KioskRootOwned kioskRoot = await KeepsakeSDK.GetOwnedObjectSuiKiosk(_walletId);
 
@@ -103,9 +123,13 @@ namespace KeepsakeSDK.Example.Game.UI
             }
             
             RootDynamic rootDynamic = await KeepsakeSDK.GetDynamicField(kioskRoot.Result.Data[0].Data.Content.fields.Cap.Fields.For);
+            //Since the assets are in a gift shop kiosk, you can retrieve them the same way you do any dynamic field objects
+            RootDynamic rootDynamicGift = await KeepsakeSDK.GetDynamicField(rootGiftShopKioskId);
+            
             
             RootObjectType rootObjectType = await KeepsakeSDK.GetObjectType("650352d76fd2f3e0ba574ee4");
             List<string> objects = new List<string>();
+            List<string> giftObjects = new List<string>();
 
             // We use rootObjectType to get the type of our NFTs and then compare if the type of the object in the kiosk is rootObjectType.Collection.FullType
             foreach (DataDynamic answer in rootDynamic.Result.Data)
@@ -115,7 +139,20 @@ namespace KeepsakeSDK.Example.Game.UI
                     objects.Add(answer.ObjectId);
                 }
             }
+
+            //Similar to the above, you want to check to make sure that the object types in the gift shop match the type, since anything can be placed in there
+            foreach (DataDynamic solution in rootDynamicGift.Result.Data)
+            {
+                if (solution.ObjectType == rootObjectType.Collection.FullType)
+                {
+                    giftObjects.Add(solution.ObjectId);
+                }
+            }
+
             RootMulti rootNft = await KeepsakeSDK.GetMultiObjects(objects.ToArray());
+            //now you can get all the objects info to display. Can be mixed in with marketplace items or have its own section
+            RootMulti rootNftGift = await KeepsakeSDK.GetMultiObjects(giftObjects.ToArray());
+
             string sessionToken = await KeepsakeSDK.OnCreateSession(_secretKey);
             string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
             string signature = await KeepsakeSDK.SignPersonalMessage(_nickname, timestamp, sessionToken);
@@ -129,6 +166,7 @@ namespace KeepsakeSDK.Example.Game.UI
 
             OpenMyNFT(rootNft.Result, rootMyListing.Results, false);
             OpenMarket(root.Results, kioskRoot.Result.Data[0].Data.Content.fields.Cap.Fields.For, false);
+            OpenGiftShop(rootNftGift.Result, token, kioskRoot.Result.Data[0].Data.Content.fields.Cap.Fields.For, kioskRoot.Result.Data[0].Data.ObjectId, rootGiftShopId, false);
 
             ActivityIndicatorItem.Close();
         }
@@ -306,6 +344,71 @@ namespace KeepsakeSDK.Example.Game.UI
                 }
 
                 cardInfo.SellBtn.gameObject.SetActive(true);
+            }
+        }
+
+        public void OpenGiftShop(List<ResultMulti> results, string token, string kiosk, string kioskCap, string bagId, bool open = true)
+        {
+            
+            _giftShopMenuItem.gameObject.SetActive(open);
+
+            for (int i = 0; i < _contentGiftShop.childCount; i++)
+            {
+                Transform childTransform = _contentGiftShop.GetChild(i);
+                Destroy(childTransform.gameObject);
+            }
+            CharacterCreator CharacterCreator = new CharacterCreator();
+
+            for (int i = 0; i < results.Count; i++)
+            {
+                CardInfoItem cardInfo = GameObject.Instantiate(_cardInfo, _contentGiftShop).GetComponent<CardInfoItem>();
+                
+
+                float speed = float.Parse(results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[2].Fields.Value, CultureInfo.InvariantCulture.NumberFormat);
+                float size = float.Parse(results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[3].Fields.Value, CultureInfo.InvariantCulture.NumberFormat);
+                string edgeColor = results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[1].Fields.Value;
+                string sideColor = results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[0].Fields.Value;
+
+                GameObject objectModel =  CharacterCreator.CreateCharacter(prefabCubix, new Vector3(0, -10000, 0), "Cubix",
+                    (int)ColorType.Parse(typeof(ColorType), sideColor),
+                    (int)ColorType.Parse(typeof(ColorType), edgeColor));
+
+                SnapshotCamera snapshotCamera = SnapshotCamera.MakeSnapshotCamera(0);
+                Texture2D snapshot = snapshotCamera.TakeObjectSnapshot(objectModel);
+
+                Destroy(objectModel);
+                Destroy(snapshotCamera);
+
+                cardInfo.CubeImage.sprite = Sprite.Create(snapshot, new Rect(0, 0, 128, 128), new Vector2());
+                cardInfo.NameText.text = results[i].Data.Content.Fields.Name;
+                cardInfo.SpeedText.text = "Speed: " + speed.ToString();
+                cardInfo.ScaleText.text = "Size: " + size.ToString();
+                cardInfo.SideColorText.text = "Side Color: " + sideColor;
+                cardInfo.EdgeColorText.text = "Edge Color: " + edgeColor;
+                cardInfo.BuyBtnText.text = "Gift";
+                cardInfo.SellBtnText.text = "Sell";
+                cardInfo.PriceText.text = "Gift";
+
+                cardInfo.Id = results[i].Data.Content.Fields.Id.Id;
+                bool listed = false;
+                
+
+                if (!listed)
+                {
+                    cardInfo.BuyBtnText.text = "Acquire";
+                    cardInfo.BuyBtn.onClick.AddListener(async delegate {
+                        ActivityIndicatorItem.Open();
+
+                        StatusTransaction status = await KeepsakeSDK.ClaimGiftShopNFTAsset(_nickname, _secretKey, _walletId, kiosk, kioskCap, cardInfo.Id, bagId);
+                        string tooltip = status.ToString() + " transaction";
+                        await OpenMainMenu(_nickname, _walletId, tooltip);
+                        _giftShopMenuItem.gameObject.SetActive(false);
+                        ActivityIndicatorItem.Close();
+                    });  
+
+                }
+
+                cardInfo.SellBtn.gameObject.SetActive(false);
             }
         }
 

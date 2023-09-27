@@ -744,6 +744,29 @@ namespace KeepsakeSDK
 
         }
 
+        ///<summary>
+        ///Used to allows users to get free items out of the "grab bag", similar to an airdrop. Items place in here do not cost any sui
+        ///dev can define settings on Keepsake marketplace. Such as amount per wallet, random or specified asset
+        ///</summary>
+        [Http("https://beta-api.keepsake.gg/web/v1/txns/take_from_bag")]
+        public static async Task<string> BuildGiftShopTransaction(string token, string kiosk, string kioskCap, string nftId, string bagId)
+        {
+            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<KeepsakeSDK>("BuildGiftShopTransaction");
+
+            string requestBody = $@"{{
+                ""kiosk"": ""{kiosk}"",
+                ""kiosk_cap"": ""{kioskCap}"",
+                ""nft_id"": ""{nftId}"",
+                ""bag_id"": ""{bagId}""
+            }}";
+
+            string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, "Authorization", $"Bearer {token}");
+            Debug.Log("GETTING GAS Response: " + bagId);
+            Gasless session = JsonConvert.DeserializeObject<Gasless>(response);
+            Debug.Log("GETTING GAS: " + session.GaslessTx);
+            return session.GaslessTx;
+        }
+
 
         /// <summary>
         /// Authorization.
@@ -1003,6 +1026,7 @@ namespace KeepsakeSDK
             RootGetObject rootObject = await GetObject(kiosk);
             double profitTotal = Double.Parse(rootObject.Result.Data.Content.Fields.Profits);
 
+            
             if(profitTotal >= 1)
             {
                 string sessionToken = await OnCreateSession(secretKey);
@@ -1018,13 +1042,41 @@ namespace KeepsakeSDK
                 string gaslessTx = await BuildWithdrawalSuiKioskProceeds(token, kioskRoot.Result.Data[0].Data.Content.fields.Cap.Fields.For, kioskRoot.Result.Data[0].Data.ObjectId);
                 ResultDev rootDev = await DevInspectTransactionBlock(walletId, gaslessTx);
                 string response = await ExecuteGaslessTransactionBlock(nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
+
                 return ConvertStringToStatus(response);
             }else{
+                
                 return StatusTransaction.Failure;
             }
 
 
             
+       }
+
+       /// <summary>
+        /// Claim Free NFT Asset from Gab Bag
+        /// </summary>
+        /// <param name="nickname">user nickname</param>
+        /// <param name="secretKey">Used to encrypt a user's wallet private key. Typically, this would tie to your app's registration and authentication.</param>
+        /// <param name="walletId">The wallet address.</param>
+        /// <param name="kiosk">Personal Sui kiosk address of user</param>
+        /// <param name="kioskCap">Personal Sui kiosk capability address of user</param>
+        /// <param name="nftId">(optional) NFT ID of selected asset. If left blank, then a random asset will be assigned</param>
+        /// <param name="bagId">Grab Bad ID of kiosk associated with the collection</param>
+        /// <returns></returns>
+       public static async Task<StatusTransaction> ClaimGiftShopNFTAsset(string nickname, string secretKey, string walletId, string kiosk, string kioskCap, string nftId, string bagId)
+       {
+            string sessionToken = await OnCreateSession(secretKey);
+            string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+            string signature = await SignPersonalMessage(nickname, timestamp, sessionToken);
+            string token = await LoginToKeepsake(signature, timestamp);
+
+            string gaslessTx = await BuildGiftShopTransaction(token, kiosk, kioskCap, nftId, bagId);
+            ResultDev rootDev = await DevInspectTransactionBlock(walletId, gaslessTx);
+
+            string response = await ExecuteGaslessTransactionBlock(nickname, sessionToken, gaslessTx, rootDev.Effects.GasUsed.ComputationCost + rootDev.Effects.GasUsed.StorageCost);
+
+            return ConvertStringToStatus(response);
        }
 
         private static StatusTransaction ConvertStringToStatus(string response)

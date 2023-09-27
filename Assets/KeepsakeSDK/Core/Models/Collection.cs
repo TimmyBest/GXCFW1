@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 
@@ -45,5 +46,7 @@ namespace KeepsakeSDK.Core.Models
         public string ObTransferPolicy { get; set; }
         public string ObTransferPolicyCap { get; set; }
         public string OrderBook { get; set; }
+        [JsonProperty("grab_bags")]
+        public List<Bag> GrabBags { get; set; }
     }
 }
