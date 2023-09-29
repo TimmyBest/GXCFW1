@@ -257,12 +257,43 @@ namespace KeepsakeSDK.Example.Game.UI
             for (int i = 0; i < results.Count; i++)
             {
                 CardInfoItem cardInfo = GameObject.Instantiate(_cardInfo, _contentMyNFT).GetComponent<CardInfoItem>();
-                
 
-                float speed = float.Parse(results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[2].Fields.Value, CultureInfo.InvariantCulture.NumberFormat);
-                float size = float.Parse(results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[3].Fields.Value, CultureInfo.InvariantCulture.NumberFormat);
-                string edgeColor = results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[1].Fields.Value;
-                string sideColor = results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[0].Fields.Value;
+
+                float speed = 0.0f;
+                float size = 0.0f;
+                string edgeColor = "";
+                string sideColor = "";
+
+                for (int k = 0; k < results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents.Count; k++)
+                {
+
+                    switch (results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[k].Fields.Key)
+                    {
+                        case "Size":
+                            Debug.Log("Size: " + results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[k].Fields.Value);
+                            size = float.Parse(results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[k].Fields.Value, CultureInfo.InvariantCulture.NumberFormat);
+
+                            break;
+                        case "Speed":
+                            Debug.Log("Speed: " + results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[k].Fields.Value);
+                            speed = float.Parse(results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[k].Fields.Value, CultureInfo.InvariantCulture.NumberFormat);
+
+                            break;
+                        case "Edge Color":
+                            Debug.Log("Edge Color: " + results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[k].Fields.Value);
+                            edgeColor = results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[k].Fields.Value;
+
+                            break;
+                        case "Side Color":
+                            Debug.Log("Side Color: " + results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[k].Fields.Value);
+                            sideColor = results[i].Data.Content.Fields.Attributes.Fields.map.Fields.Contents[k].Fields.Value;
+
+                            break;
+                        default:
+                            break;
+                    }
+
+                }
 
                 GameObject objectModel =  CharacterCreator.CreateCharacter(prefabCubix, new Vector3(0, -10000, 0), "Cubix",
                     (int)ColorType.Parse(typeof(ColorType), sideColor),
