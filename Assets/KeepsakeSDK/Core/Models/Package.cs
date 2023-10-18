@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 
@@ -6,6 +7,7 @@ namespace KeepsakeSDK.Core.Models
     [Serializable]
     public class Package
     {
-        public PackageType Packages { get; set; }
+        [JsonProperty("object_ids")]
+        public PackageType ObjectIds { get; set; }
     }
 }

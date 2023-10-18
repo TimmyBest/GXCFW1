@@ -40,17 +40,25 @@ namespace KeepsakeSDK
         [Http("https://integrated.keepsake.gg/web/v1/sdk/createSession")]
         public static async Task<string> OnCreateSession(string secretKey)
         {
-            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<KeepsakeSDK>("OnCreateSession");
+            try
+            {
+                HttpAttribute attribute = HttpAttribute.GetAttributeCustom<KeepsakeSDK>("OnCreateSession");
 
-            string authorization_key = await AuthorizationKey();
-            string authorization_value = await AuthorizationValue();
+                string authorization_key = await AuthorizationKey();
+                string authorization_value = await AuthorizationValue();
 
-            string requestBody = $@"{{""jsonrpc"":""2.0"", ""method"":""shinami_key_createSession"", ""params"":[""{secretKey}""], ""id"":1}}";
-            string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, authorization_key, authorization_value);
+                string requestBody = $@"{{""jsonrpc"":""2.0"", ""method"":""shinami_key_createSession"", ""params"":[""{secretKey}""], ""id"":1}}";
+                string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, authorization_key, authorization_value);
 
-            Session session = JsonConvert.DeserializeObject<Session>(response);
-            Debug.Log("INFO: " + session.Result);
-            return session.Result;
+                Session session = JsonConvert.DeserializeObject<Session>(response);
+                Debug.Log("INFO: " + session.Result);
+                return session.Result;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Error while creating session: {e.Message}");
+                return null;
+            }
         }
 
         /// <summary>
@@ -84,17 +92,39 @@ namespace KeepsakeSDK
         [Http("https://integrated.keepsake.gg/web/v1/sdk/getWallet")]
         public static async Task<string> GetWallet(string walletId)
         {
-            HttpAttribute attribute = HttpAttribute.GetAttributeCustom<KeepsakeSDK>("GetWallet");
+            try
+            {
+                HttpAttribute attribute = HttpAttribute.GetAttributeCustom<KeepsakeSDK>("GetWallet");
 
-            string authorization_key = await AuthorizationKey();
-            string authorization_value = await AuthorizationValue();
+                string authorization_key = await AuthorizationKey();
+                string authorization_value = await AuthorizationValue();
 
-            string requestBody = $@"{{ ""jsonrpc"":""2.0"", ""method"":""shinami_wal_getWallet"", ""params"":[""{walletId}""], ""id"":1 }}";
-            string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, authorization_key, authorization_value);
-            
-            Session session = JsonConvert.DeserializeObject<Session>(response);
-            return session.Result;
+                string requestBody = $@"{{ ""jsonrpc"":""2.0"", ""method"":""shinami_wal_getWallet"", ""params"":[""{walletId}""], ""id"":1 }}";
+                string response = await httpClient.PostRequestWithAuthorization(attribute.Url, requestBody, authorization_key, authorization_value);
+                
+                if (string.IsNullOrWhiteSpace(response))
+                {
+                    Debug.LogError("GetWallet: Empty response received.");
+                    return null;
+                }
+
+                Session session = JsonConvert.DeserializeObject<Session>(response);
+
+                if (session == null || string.IsNullOrWhiteSpace(session.Result))
+                {
+                    Debug.LogError("GetWallet: Invalid session data.");
+                    return null;
+                }
+                
+                return session.Result;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"GetWallet Error: {ex.Message}");
+                return null;
+            }
         }
+
 
         /// <summary>
         /// Signs a fully constructed transaction block. This is a low level API - it requires integration with Gas Station API and Sui API for transaction sponsorship (if needed) and execution. This method gives you more control over how you submit transactions to Sui.
@@ -116,13 +146,16 @@ namespace KeepsakeSDK
 
             string base64Message = Convert.ToBase64String(byteArray);
 
+            bool wrapBsc = true;
+
             string requestBody = $@"{{
                 ""jsonrpc"": ""2.0"",
                 ""method"": ""shinami_wal_signPersonalMessage"",
                 ""params"": [
                     ""{walletId}"",
                     ""{sessionToken}"",
-                    ""{base64Message}""
+                    ""{base64Message}"",
+                    ""{wrapBsc}""
                 ],
                 ""id"": 1
             }}";
@@ -284,7 +317,9 @@ namespace KeepsakeSDK
 
             // string structType = "0x2::kiosk::KioskOwnerCap";
             Package package = await  SuiPackageInformation();
-            string structType = package.Packages.mysten_kiosk + "::personal_kiosk::PersonalKioskCap";
+            // string structType = package.Packages.mysten_kiosk + "::personal_kiosk::PersonalKioskCap";
+            string structType = package.ObjectIds.personal_kiosk + "::personal_kiosk::PersonalKioskCap";
+            Debug.Log("package info" + structType);
 
             string requestBody = $@"{{
               ""jsonrpc"": ""2.0"",

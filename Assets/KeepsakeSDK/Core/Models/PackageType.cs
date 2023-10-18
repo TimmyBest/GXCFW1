@@ -6,6 +6,6 @@ namespace KeepsakeSDK.Core.Models
     [Serializable]
     public class PackageType
     {
-        public string mysten_kiosk { get; set; }
+        public string personal_kiosk { get; set; }
     }
 }
